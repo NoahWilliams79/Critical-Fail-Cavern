@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title description">
+  <title id="title">Grasslands battlemap</title>
+  <desc id="description">A top-down grassy field crossed by a winding dirt trail, with a pond, scattered trees, rocks, and small patches of flowers.</desc>
+  <defs>
+    <pattern id="grass" width="38" height="38" patternUnits="userSpaceOnUse">
+      <rect width="38" height="38" fill="#809b55"/>
+      <path d="M5 10l3-5m6 22 3-6m11 1 4-5M8 36l2-4m23-18 2-4" stroke="#a3b66b" stroke-width="2" stroke-linecap="round" opacity=".48"/>
+      <circle cx="27" cy="31" r="1.5" fill="#667f48" opacity=".5"/>
+      <circle cx="16" cy="8" r="1.2" fill="#607b45" opacity=".5"/>
+    </pattern>
+    <pattern id="trail" width="34" height="34" patternUnits="userSpaceOnUse" patternTransform="rotate(18)">
+      <rect width="34" height="34" fill="#c6ad79"/>
+      <path d="M3 5h8m12 13h7M6 29h5" stroke="#a68b5d" stroke-width="2" stroke-linecap="round" opacity=".55"/>
+      <circle cx="22" cy="5" r="1.5" fill="#e0ca96"/>
+    </pattern>
+    <linearGradient id="water" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6eaaa0"/>
+      <stop offset="1" stop-color="#397a78"/>
+    </linearGradient>
+    <g id="tree">
+      <ellipse cx="0" cy="9" rx="28" ry="23" fill="#3c5838" opacity=".4"/>
+      <circle cx="0" cy="0" r="25" fill="#355b3d"/>
+      <circle cx="-11" cy="-7" r="13" fill="#527744"/>
+      <circle cx="10" cy="-10" r="14" fill="#63874a"/>
+      <circle cx="12" cy="8" r="12" fill="#466a3e"/>
+      <circle cx="-6" cy="9" r="12" fill="#5a7d45"/>
+      <circle cx="-2" cy="-2" r="4" fill="#83975a" opacity=".6"/>
+    </g>
+    <g id="rock">
+      <ellipse cx="2" cy="5" rx="17" ry="11" fill="#475344" opacity=".35"/>
+      <path d="M-15 2l5-12 13-4 12 8 3 12-10 8-17-2z" fill="#8b8b73" stroke="#5d6958" stroke-width="3"/>
+      <path d="M-8-7l10-4 7 5" fill="none" stroke="#b2ae8b" stroke-width="3" stroke-linecap="round"/>
+    </g>
+    <g id="flowers">
+      <circle cx="0" cy="0" r="3" fill="#e6d98b"/>
+      <circle cx="9" cy="8" r="2.5" fill="#e8e2c3"/>
+      <circle cx="-8" cy="10" r="2.5" fill="#d9c477"/>
+      <path d="M0 4v11m9-3v10m-17-4v9" stroke="#597648" stroke-width="2"/>
+    </g>
+  </defs>
+  <rect width="1200" height="675" fill="url(#grass)"/>
+  <path d="M0 115C160 55 254 110 385 65S636 108 760 62 1005 40 1200 94v150c-181-34-290 63-442 30S482 227 332 280 126 237 0 280z" fill="#91a95f" opacity=".55"/>
+  <path d="M0 470c163-73 266-18 390 20s206 89 352 54 290-16 458 38v93H0z" fill="#6f8c4d" opacity=".5"/>
+  <path d="M-55 581C135 539 205 445 361 451s222 39 333-67 130-202 244-223 190-7 327-113" fill="none" stroke="#806a45" stroke-width="132" stroke-linecap="round"/>
+  <path d="M-55 581C135 539 205 445 361 451s222 39 333-67 130-202 244-223 190-7 327-113" fill="url(#trail)" stroke="#d7c18e" stroke-width="106" stroke-linecap="round"/>
+  <path d="M-55 581C135 539 205 445 361 451s222 39 333-67 130-202 244-223 190-7 327-113" fill="none" stroke="#e1cf9f" stroke-width="2" stroke-dasharray="3 15" opacity=".7"/>
+  <path d="M863 544c19-48 83-70 137-58 52 11 78 46 64 82-14 36-73 61-130 54-57-7-91-37-71-78z" fill="#65784b" opacity=".45"/>
+  <path d="M857 529c18-44 80-65 132-53 49 11 74 42 61 75-14 34-70 57-124 51-54-6-87-37-69-73z" fill="url(#water)" stroke="#d0bc83" stroke-width="10"/>
+  <path d="M885 518c28-22 70-29 105-18m-89 73c26 12 61 13 89 4" fill="none" stroke="#a5d0b1" stroke-width="5" stroke-linecap="round" opacity=".65"/>
+  <path d="M130 160c33-25 72-29 105-13m-83 37c22-11 45-12 66-6M485 155c35-21 75-18 104-2m-90 25c25-9 49-9 71-2M1010 351c36-14 70-5 94 13m-89 5c20-5 39-2 56 7" fill="none" stroke="#a8b86c" stroke-width="9" stroke-linecap="round" opacity=".55"/>
+  <use href="#tree" transform="translate(82 330) scale(1.05)"/>
+  <use href="#tree" transform="translate(148 365) scale(.8)"/>
+  <use href="#tree" transform="translate(112 415) scale(.9)"/>
+  <use href="#tree" transform="translate(311 150) scale(.9)"/>
+  <use href="#tree" transform="translate(367 121) scale(.72)"/>
+  <use href="#tree" transform="translate(535 570) scale(1.05)"/>
+  <use href="#tree" transform="translate(597 589) scale(.75)"/>
+  <use href="#tree" transform="translate(1051 222) scale(1.05)"/>
+  <use href="#tree" transform="translate(1110 264) scale(.8)"/>
+  <use href="#tree" transform="translate(1031 295) scale(.72)"/>
+  <use href="#tree" transform="translate(735 116) scale(.82)"/>
+  <use href="#tree" transform="translate(786 138) scale(.65)"/>
+  <use href="#rock" transform="translate(256 331)"/>
+  <use href="#rock" transform="translate(284 345) scale(.72)"/>
+  <use href="#rock" transform="translate(689 500) scale(1.2)"/>
+  <use href="#rock" transform="translate(724 513) scale(.68)"/>
+  <use href="#rock" transform="translate(945 116) scale(.85)"/>
+  <use href="#rock" transform="translate(959 129) scale(.55)"/>
+  <use href="#flowers" transform="translate(218 112)"/>
+  <use href="#flowers" transform="translate(455 299) scale(.8)"/>
+  <use href="#flowers" transform="translate(830 400) scale(1.1)"/>
+  <use href="#flowers" transform="translate(1115 495) scale(.85)"/>
+  <use href="#flowers" transform="translate(440 579) scale(.75)"/>
+  <rect x="4" y="4" width="1192" height="667" rx="12" fill="none" stroke="#e1d5ac" stroke-width="8" opacity=".72"/>
+</svg>

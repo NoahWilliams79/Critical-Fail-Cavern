@@ -2,7 +2,7 @@
 
 **Team name:** Just Noah Williams
 **Startup name:** Critical Fail Cavern
-**Live site link:**
+**Live site link:** TBA
 
 ---
 
@@ -53,10 +53,29 @@ Copy this block for each session.
   1. change style of website to use grey blue gold as colours and use a skyrim styled cavern as a background
   2. change database and collection should not be seperate pages
   3. If signed out of account state its signed out in membership.
-- **What worked:**
-- **What broke, and how we fixed it:** 
-- **Committed?** yes / no — commit message:
+- **What worked:** UI was modified correctly,
+- **What broke, and how we fixed it:** N/A
+- **Committed?** yes / no — commit message: yes - Refactor membership plans and enhance UI elements for improved user experience
 
+---
+### Session — [Novemeber 24th, 2026] — driver: [Noah]
+
+- **Goal for this session:**  Dashboard,Battle map,and account logistics ironed out
+- **Key prompts we gave Copilot** (paste the important ones):
+  1. when not signed in the counts on dashboard, activity, inititive tracker and marketplace postings should be empty
+  2. if not signed in inititive tracker, and database is reset to empty
+  3. Battle map should be empty if not signed in
+  4. Marketplace should always use account display name for seller name
+  5. Make demo account be named "BSAD 281 Demo account" and when a ffictional local profiles is attempted to be made, prompt a message saying to use the BSAD demo account 
+  6. Remove ability to sign into local fictional profile
+  7. provide option to make map fuil screen
+  8. Have the player markers not include the players but create a legend 
+  9. move legend to vertical on right side of map, and ensure it opens in full screen
+  10. move legend to side of map so its not on surface but still opens full screen
+
+- **What worked:** account login enables features to display information, marketplace now uses account name for seller name, demo account fully set up, generated a base battlemap, legend and added full screen capability.
+- **What broke, and how we fixed it:** 
+- **Committed?** yes / no — commit message: yes - Refactor battle map functionality to include built-in grasslands map option, enhance UI for account management, and implement full-screen capabilities. Update marketplace to use account display names and improve collection management for signed-in users.
 ---
 ## Things that broke (running list)
 

@@ -132,9 +132,11 @@
 
     <section id="battle-map" data-view hidden>
       <h1>Battle map</h1>
-      <p class="muted">Upload a PDF map, then drag encounter markers into position. Marker health follows the initiative tracker.</p>
+      <p class="muted">Choose the built-in grasslands map or upload a PDF, then drag encounter markers into position. Marker health follows the initiative tracker.</p>
       <div class="map-toolbar card">
-        <label>Upload PDF battle map<input type="file" id="map-upload" accept="application/pdf,.pdf"></label>
+        <label>Map source<select id="map-source"><option value="grasslands">Grasslands (built-in)</option><option value="pdf">Upload a PDF</option></select></label>
+        <label id="pdf-map-control" hidden>Upload PDF battle map<input type="file" id="map-upload" accept="application/pdf,.pdf"></label>
+        <button type="button" class="button secondary" id="fullscreen-map" aria-pressed="false">Full screen</button>
         <button type="button" class="button secondary" id="toggle-grid" aria-pressed="false">Show grid</button>
         <form id="marker-form" class="inline-form">
           <label>Add encounter marker<select id="marker-combatant"></select></label>
@@ -142,14 +144,22 @@
         </form>
       </div>
       <p id="map-message" class="muted" role="status"></p>
-      <div id="map-surface" class="map-surface" aria-label="Battle map and creature markers">
-        <div id="map-placeholder" class="map-placeholder">
-          <strong>Your cavern awaits</strong>
-          <span>Upload a PDF to display your battle map. Markers can be placed on this surface in the meantime.</span>
+      <div id="map-layout" class="map-layout">
+        <div id="map-surface" class="map-surface" aria-label="Battle map and creature markers">
+          <img id="grasslands-map" class="grasslands-map" src="grasslands-map.svg" alt="Top-down grasslands battlemap with a winding trail, pond, trees, and boulders" hidden>
+          <div id="map-placeholder" class="map-placeholder">
+            <strong>Your cavern awaits</strong>
+            <span>Upload a PDF to display your battle map. Markers can be placed on this surface in the meantime.</span>
+          </div>
+          <iframe id="map-pdf" title="Uploaded PDF battle map" hidden></iframe>
+          <div id="map-grid" class="map-grid" hidden></div>
+          <div id="marker-layer" class="marker-layer"></div>
+          <button type="button" class="button secondary fullscreen-exit" id="fullscreen-exit" hidden>Exit full screen</button>
         </div>
-        <iframe id="map-pdf" title="Uploaded PDF battle map" hidden></iframe>
-        <div id="map-grid" class="map-grid" hidden></div>
-        <div id="marker-layer" class="marker-layer"></div>
+        <section id="map-legend" class="card map-legend" aria-labelledby="map-legend-title" hidden>
+          <h2 id="map-legend-title">Map legend</h2>
+          <ol id="map-legend-list" class="map-legend-list"></ol>
+        </section>
       </div>
       <p class="muted small">PDF display uses your browser's built-in viewer. The selected file is not uploaded or saved; choose it again after refreshing.</p>
     </section>
@@ -169,7 +179,7 @@
           <label>Product name<input name="name" required maxlength="80"></label>
           <label>Format<select name="type"><option>Physical</option><option>Digital STL</option></select></label>
           <label>Price (fictional)<input name="price" type="number" min="0.01" max="99999" step="0.01" required></label>
-          <label>Seller display name<input name="seller" maxlength="60" placeholder="Defaults to your profile"></label>
+          <label>Seller account name<input name="seller" readonly></label>
           <label class="wide">Description<textarea name="description" rows="2" maxlength="500" required></textarea></label>
         </div>
         <div class="action-links">

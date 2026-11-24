@@ -54,6 +54,7 @@
         { id: "marker-mossback", combatantId: "combatant-mossback", x: 67, y: 55 }
       ],
       gridEnabled: false,
+      mapSource: "grasslands",
       mapFileName: "",
       marketListings: [],
       purchases: [],
@@ -77,8 +78,16 @@
   });
   if (!state.account || typeof state.account !== "object") state.account = null;
   if (!state.localProfile || typeof state.localProfile !== "object") state.localProfile = null;
+  if (state.account && state.account.kind === "local") state.account = null;
+  if (!storedState || (storedState.mapSource !== "grasslands" && storedState.mapSource !== "pdf")) {
+    state.mapSource = state.mapFileName ? "pdf" : "grasslands";
+  }
+  if (state.account && state.account.kind === "demo") state.account.name = "BSAD 281 Demo account";
+  state.marketListings.forEach(function (listing) {
+    if (listing.owner === "Demo Adventurer") listing.owner = "BSAD 281 Demo account";
+    if (listing.seller === "Demo Adventurer") listing.seller = "BSAD 281 Demo account";
+  });
   if (state.account && state.account.membership === "Pro") state.account.membership = "Creator";
-  if (state.localProfile && state.localProfile.membership === "Pro") state.localProfile.membership = "Creator";
   if (!Number.isInteger(state.turnIndex)) state.turnIndex = 0;
   if (!Number.isInteger(state.round) || state.round < 1) state.round = 1;
 
@@ -234,16 +243,17 @@
     ];
     stats.replaceChildren.apply(stats, cards.map(function (item) {
       const card = element("article", "card stat-card");
-      card.append(element("p", "muted", item[0]), element("strong", "", String(item[1])));
+      card.append(element("p", "muted", item[0]), element("strong", "", state.account ? String(item[1]) : ""));
       return card;
     }));
     const activityList = document.getElementById("activity-list");
-    activityList.replaceChildren.apply(activityList, state.activity.map(function (item) {
+    activityList.replaceChildren.apply(activityList, (state.account ? state.activity : []).map(function (item) {
       return element("li", "", item.text);
     }));
   }
 
   function addToCollection(miniature) {
+    if (!state.account) return notify("Sign in before adding miniatures to your collection.", "error");
     const existing = state.collection.find(function (entry) { return entry.miniatureId === miniature.id; });
     if (collectionCount() >= collectionLimit()) {
       notify("Your " + currentPlan() + " plan has reached its " + collectionLimit() + "-miniature collection limit. Upgrade your plan for more space.", "error");
@@ -297,6 +307,10 @@
         element("p", "muted small", item.gameSystem + " · " + item.creator)
       );
       const button = makeButton("Add to my collection", "button secondary", function () { addToCollection(item); });
+      if (!state.account) {
+        button.disabled = true;
+        button.title = "Sign in to add miniatures to your collection.";
+      }
       if (collectionCount() >= collectionLimit()) {
         button.disabled = true;
         button.title = "Your current plan has reached its collection limit.";
@@ -333,10 +347,11 @@
 
   function renderCollection() {
     const limit = collectionLimit();
-    document.getElementById("collection-capacity").textContent =
-      collectionCount() + " of " + (limit === 10000 ? "generous" : limit) + " miniatures used on your " + currentPlan() + " plan.";
+    document.getElementById("collection-capacity").textContent = state.account
+      ? collectionCount() + " of " + (limit === 10000 ? "generous" : limit) + " miniatures used on your " + currentPlan() + " plan."
+      : "";
     const query = document.getElementById("collection-search").value.trim().toLowerCase();
-    const matches = state.collection.filter(function (entry) {
+    const matches = (state.account ? state.collection : []).filter(function (entry) {
       return [entry.name, entry.creatureType, entry.size, entry.gameSystem, entry.creator, entry.paintingStatus, entry.notes].join(" ").toLowerCase().indexOf(query) !== -1;
     });
     const grid = document.getElementById("collection-grid");
@@ -379,7 +394,11 @@
       card.append(quantity, actions);
       return card;
     }));
-    document.getElementById("collection-empty").hidden = matches.length > 0;
+    const empty = document.getElementById("collection-empty");
+    empty.textContent = state.account
+      ? "Your collection is empty. Add a miniature above or from the database."
+      : "Sign in to view your personal collection.";
+    empty.hidden = matches.length > 0;
   }
 
   function renderMiniatureOptions() {
@@ -394,7 +413,7 @@
     state.collection.forEach(function (entry) {
       collectionGroup.appendChild(new Option(entry.name + " (" + entry.quantity + ")", "collection|" + entry.id));
     });
-    if (state.collection.length) select.appendChild(collectionGroup);
+    if (state.account && state.collection.length) select.appendChild(collectionGroup);
   }
 
   function selectedCombatant(combatant) {
@@ -412,11 +431,18 @@
   function renderCombatants() {
     const list = document.getElementById("combatant-list");
     const ordered = sortedCombatants();
-    document.getElementById("round-number").textContent = String(state.round);
+    document.getElementById("round-number").textContent = state.account ? String(state.round) : "";
     const active = state.combatants[state.turnIndex];
-    document.getElementById("turn-label").textContent = active ? combatantName(active) + "'s turn" : "No active combatants";
-    document.getElementById("next-turn").disabled = state.combatants.length === 0;
-    list.replaceChildren.apply(list, ordered.map(function (combatant) {
+    document.getElementById("turn-label").textContent = state.account
+      ? (active ? combatantName(active) + "'s turn" : "No active combatants")
+      : "";
+    document.getElementById("next-turn").disabled = !state.account || state.combatants.length === 0;
+    document.getElementById("save-encounter").disabled = !state.account;
+    document.getElementById("load-encounter").disabled = !state.account;
+    document.getElementById("encounter-name").disabled = !state.account;
+    document.getElementById("saved-encounters").disabled = !state.account;
+    document.querySelector("#combatant-form button[type='submit']").disabled = !state.account;
+    list.replaceChildren.apply(list, (state.account ? ordered : []).map(function (combatant) {
       const card = element("article", "card combatant-card" + (combatant.id === (active && active.id) ? " current-turn" : "") + (combatant.id === state.selectedCombatantId ? " selected-combatant" : ""));
       const top = element("div", "combatant-heading");
       const identity = element("div");
@@ -477,7 +503,9 @@
       card.append(top, health, actions);
       return card;
     }));
-    document.getElementById("combatant-empty").hidden = state.combatants.length > 0;
+    const empty = document.getElementById("combatant-empty");
+    empty.textContent = state.account ? "No combatants yet. Add a player or creature to begin." : "Sign in to view your initiative tracker.";
+    empty.hidden = state.account && state.combatants.length > 0;
     renderMiniatureOptions();
     renderEncounterOptions();
   }
@@ -486,9 +514,11 @@
     const select = document.getElementById("saved-encounters");
     const previous = select.value;
     select.replaceChildren(new Option("Choose a saved encounter", ""));
-    state.savedEncounters.forEach(function (encounter) { select.appendChild(new Option(encounter.name, encounter.id)); });
+    if (state.account) {
+      state.savedEncounters.forEach(function (encounter) { select.appendChild(new Option(encounter.name, encounter.id)); });
+    }
     if (state.savedEncounters.some(function (encounter) { return encounter.id === previous; })) select.value = previous;
-    document.getElementById("encounter-name").value = state.encounterName || "Untitled encounter";
+    document.getElementById("encounter-name").value = state.account ? state.encounterName || "Untitled encounter" : "";
   }
 
   function saveEncounter() {
@@ -531,39 +561,87 @@
 
   function renderMap() {
     const surface = document.getElementById("map-surface");
+    const mapLayout = document.getElementById("map-layout");
+    const grasslands = document.getElementById("grasslands-map");
     const placeholder = document.getElementById("map-placeholder");
     const frame = document.getElementById("map-pdf");
-    document.getElementById("map-grid").hidden = !state.gridEnabled;
+    const mapGrid = document.getElementById("map-grid");
+    const mapSource = document.getElementById("map-source");
+    const pdfMapControl = document.getElementById("pdf-map-control");
+    const mapUpload = document.getElementById("map-upload");
+    const fullscreenButton = document.getElementById("fullscreen-map");
+    const fullscreenExit = document.getElementById("fullscreen-exit");
     const gridButton = document.getElementById("toggle-grid");
+    const markerSelect = document.getElementById("marker-combatant");
+    const markerSubmit = document.querySelector("#marker-form button[type='submit']");
+    const layer = document.getElementById("marker-layer");
+    const legend = document.getElementById("map-legend");
+    const legendList = document.getElementById("map-legend-list");
+    const mapMessage = document.getElementById("map-message");
+    mapSource.value = state.mapSource;
+    mapSource.disabled = !state.account;
+    pdfMapControl.hidden = !state.account || state.mapSource !== "pdf";
+    mapUpload.disabled = !state.account || state.mapSource !== "pdf";
+    fullscreenButton.disabled = !state.account || !document.fullscreenEnabled || typeof mapLayout.requestFullscreen !== "function";
+    gridButton.disabled = !state.account;
+    markerSelect.disabled = !state.account;
+    markerSubmit.disabled = !state.account;
     gridButton.setAttribute("aria-pressed", state.gridEnabled ? "true" : "false");
     gridButton.textContent = state.gridEnabled ? "Hide grid" : "Show grid";
-    if (uploadedMapUrl) {
-      if (frame.src !== uploadedMapUrl) frame.src = uploadedMapUrl;
-      frame.hidden = false;
+    fullscreenButton.setAttribute("aria-pressed", document.fullscreenElement === mapLayout ? "true" : "false");
+    fullscreenExit.hidden = document.fullscreenElement !== mapLayout;
+    if (!state.account) {
+      grasslands.hidden = true;
+      frame.hidden = true;
+      placeholder.hidden = true;
+      mapGrid.hidden = true;
+      layer.replaceChildren();
+      legendList.replaceChildren();
+      legend.hidden = true;
+      mapMessage.textContent = "Sign in to view your battle map.";
+      renderMarkerOptions();
+      return;
+    }
+    mapGrid.hidden = !state.gridEnabled;
+    if (state.mapSource === "grasslands") {
+      grasslands.hidden = false;
+      frame.hidden = true;
       placeholder.hidden = true;
     } else {
-      frame.hidden = true;
-      placeholder.hidden = false;
-      placeholder.replaceChildren(
-        element("strong", "", state.mapFileName ? "Re-select your PDF map" : "Your cavern awaits"),
-        element("span", "", state.mapFileName
-          ? "The selected file \"" + state.mapFileName + "\" is not stored. Choose it again above to display it."
-          : "Upload a PDF to display your battle map. Markers can be placed on this surface in the meantime.")
-      );
+      grasslands.hidden = true;
+      if (uploadedMapUrl) {
+        if (frame.src !== uploadedMapUrl) frame.src = uploadedMapUrl;
+        frame.hidden = false;
+        placeholder.hidden = true;
+      } else {
+        frame.hidden = true;
+        placeholder.hidden = false;
+        placeholder.replaceChildren(
+          element("strong", "", state.mapFileName ? "Re-select your PDF map" : "Your cavern awaits"),
+          element("span", "", state.mapFileName
+            ? "The selected file \"" + state.mapFileName + "\" is not stored. Choose it again above to display it."
+            : "Upload a PDF to display your battle map. Markers can be placed on this surface in the meantime.")
+        );
+      }
     }
-    const layer = document.getElementById("marker-layer");
     layer.replaceChildren();
+    legendList.replaceChildren();
+    let markerNumber = 0;
     state.mapMarkers.forEach(function (marker) {
       const combatant = getCombatant(marker.combatantId);
       if (!combatant) return;
+      markerNumber += 1;
       const button = element("button", "map-marker" + (combatant.id === state.selectedCombatantId ? " marker-selected" : ""));
       button.type = "button";
       button.style.left = Math.max(0, Math.min(100, Number(marker.x))) + "%";
       button.style.top = Math.max(0, Math.min(100, Number(marker.y))) + "%";
-      button.setAttribute("aria-label", combatant.name + ", " + combatant.hp + " of " + combatant.maxHp + " hit points. Select or drag marker.");
-      const healthRatio = Number(combatant.maxHp) > 0 ? Number(combatant.hp) / Number(combatant.maxHp) : 0;
-      const healthClass = healthRatio <= 0.25 ? "health-low" : healthRatio <= 0.5 ? "health-mid" : "health-good";
-      button.append(element("span", "health-dot " + healthClass), element("span", "marker-name", combatant.name), element("span", "marker-hp", combatant.hp + "/" + combatant.maxHp + " HP"));
+      button.setAttribute("aria-label", "Marker " + markerNumber + ". See the map legend for details. Select or drag marker.");
+      button.appendChild(element("span", "map-marker-token", String(markerNumber)));
+      const legendEntry = element("li", "map-legend-entry" + (combatant.id === state.selectedCombatantId ? " legend-selected" : ""));
+      const legendToken = element("span", "map-legend-token", String(markerNumber));
+      legendToken.setAttribute("aria-hidden", "true");
+      legendEntry.append(legendToken, element("span", "", combatant.name + " (" + combatant.kind + ") · Initiative " + combatant.initiative + " · " + combatant.hp + "/" + combatant.maxHp + " HP"));
+      legendList.appendChild(legendEntry);
       let pointerStart = null;
       let wasDragged = false;
       button.addEventListener("pointerdown", function (event) {
@@ -602,17 +680,17 @@
         state.selectedCombatantId = combatant.id;
         renderCombatants();
         renderMap();
-        notify(combatant.name + " selected in the initiative tracker.");
+        notify("Map marker selected. See the legend for details.");
       });
       layer.appendChild(button);
     });
+    legend.hidden = markerNumber === 0;
     const selected = getCombatant(state.selectedCombatantId);
     const marker = state.mapMarkers.find(function (item) { return selected && item.combatantId === selected.id; });
-    const mapMessage = document.getElementById("map-message");
     mapMessage.textContent = selected
       ? marker
-        ? "Selected: " + selected.name + " · " + selected.hp + "/" + selected.maxHp + " HP. Its marker is highlighted."
-        : "Selected: " + selected.name + ". Add a marker above to place it on the map."
+        ? "Selected marker. See the legend for details."
+        : "Selected combatant has no map marker. Add one above to place it on the map."
       : "Select a combatant in the initiative tracker or place a marker.";
     if (selected && marker) {
       const link = document.createElement("a");
@@ -626,6 +704,11 @@
 
   function renderMarkerOptions() {
     const select = document.getElementById("marker-combatant");
+    if (!state.account) {
+      select.replaceChildren(new Option("Sign in to view map markers", ""));
+      document.querySelector("#marker-form button[type='submit']").disabled = true;
+      return;
+    }
     const used = state.mapMarkers.map(function (marker) { return marker.combatantId; });
     const available = sortedCombatants().filter(function (combatant) { return used.indexOf(combatant.id) === -1; });
     select.replaceChildren(new Option(available.length ? "Choose a combatant" : "No unplaced combatants", ""));
@@ -636,11 +719,12 @@
   function renderMarketplace() {
     const query = document.getElementById("market-search").value.trim().toLowerCase();
     const type = document.getElementById("market-type").value;
+    document.querySelector("#listing-form [name='seller']").value = state.account ? state.account.name : "";
     const items = MARKET_SAMPLE.concat(state.marketListings).filter(function (item) {
       return (type === "all" || item.type === type) &&
-        [item.name, item.type, item.seller, item.description].join(" ").toLowerCase().indexOf(query) !== -1;
+        [item.name, item.type, item.owner || item.seller, item.description].join(" ").toLowerCase().indexOf(query) !== -1;
     });
-    document.getElementById("market-count").textContent = items.length + " listing(s)";
+    document.getElementById("market-count").textContent = state.account ? items.length + " listing(s)" : "";
     const grid = document.getElementById("market-grid");
     grid.replaceChildren.apply(grid, items.map(function (item) {
       const card = element("article", "card");
@@ -649,7 +733,7 @@
         element("h2", "", item.name),
         element("p", "", item.description),
         element("p", "price", "$" + Number(item.price).toFixed(2) + " " + (item.type === "Digital STL" ? "· simulated digital file" : "· simulated physical item")),
-        element("p", "muted small", "Seller: " + item.seller)
+        element("p", "muted small", "Seller: " + (item.owner || item.seller))
       );
       if (item.reviews) {
         card.append(element("p", "review", "★ " + item.rating + "/5 · " + item.reviews + " fictional reviews"),
@@ -712,9 +796,10 @@
     const item = state.marketListings.find(function (listing) { return listing.id === id; });
     if (!item) return;
     const form = document.getElementById("listing-form");
-    ["listingId", "name", "type", "price", "seller", "description"].forEach(function (field) {
+    ["listingId", "name", "type", "price", "description"].forEach(function (field) {
       form.elements.namedItem(field).value = item[field];
     });
+    form.elements.namedItem("seller").value = state.account.name;
     document.getElementById("listing-form-title").textContent = "Edit listing";
     form.querySelector("button[type='submit']").textContent = "Save listing";
     document.getElementById("cancel-listing-edit").hidden = false;
@@ -745,12 +830,11 @@
       card.append(element("span", "tag", item.price), element("h2", "", item.name), element("p", "", item.collection), element("p", "", item.listings));
       const button = makeButton(state.account && item.name === plan ? "Current plan" : "Choose " + item.name, "button secondary", function () {
         if (!state.account) {
-          notify("Sign in with the demo account or create a local profile before changing membership.", "error");
+          notify("Sign in to the BSAD 281 Demo account before changing membership.", "error");
           window.location.hash = "#account";
           return;
         }
         state.account.membership = item.name;
-        if (state.account.kind === "local" && state.localProfile) state.localProfile.membership = item.name;
         recordActivity("Changed membership to " + item.name + " (simulated).");
         saveState(item.name === "Free" ? "Free plan selected." : item.name + " plan activated for this demo. No payment was taken.");
         renderAll();
@@ -765,46 +849,35 @@
     const panel = document.getElementById("account-panel");
     panel.replaceChildren();
     if (!state.account) {
-      panel.append(element("h2", "", "Welcome, adventurer"), element("p", "", "Sign in to the demo account or create one fictional local profile. No passwords, email addresses, or payments are used."));
-      panel.appendChild(makeButton("Continue as Demo Adventurer", "button", function () {
-        state.account = { name: "Demo Adventurer", membership: "Free", kind: "demo" };
+      panel.append(element("h2", "", "Welcome, adventurer"), element("p", "", "Sign in to the BSAD 281 Demo account. No passwords, email addresses, or payments are used."));
+      panel.appendChild(makeButton("Continue as BSAD 281 Demo account", "button", function () {
+        state.account = { name: "BSAD 281 Demo account", membership: "Free", kind: "demo" };
         recordActivity("Signed in to the fictional demo account.");
-        saveState("Signed in to Demo Adventurer.");
+        saveState("Signed in to the BSAD 281 Demo account.");
         renderAll();
       }));
-      if (state.localProfile) {
-        panel.append(element("h2", "", "Local profile available"), element("p", "muted", state.localProfile.name + " · " + state.localProfile.membership));
-        panel.appendChild(makeButton("Sign in to " + state.localProfile.name, "button secondary", function () {
-          state.account = { name: state.localProfile.name, membership: state.localProfile.membership, kind: "local" };
-          saveState("Signed in to your local profile.");
-          renderAll();
-        }));
-      }
       const form = document.createElement("form");
       form.id = "profile-form";
       form.className = "profile-form";
-      const label = element("label", "", "Create a fictional local profile");
+      const label = element("label", "", "Fictional local profile display name");
       const input = document.createElement("input");
       input.name = "displayName";
-      input.required = true;
       input.maxLength = 40;
       input.autocomplete = "off";
       input.placeholder = "Display name";
       label.appendChild(input);
-      form.append(label, makeButton("Create profile and sign in", "button secondary", function () {
-        if (!input.value.trim()) return notify("Enter a display name for your local profile.", "error");
-        state.localProfile = { name: input.value.trim(), membership: "Free" };
-        state.account = { name: state.localProfile.name, membership: "Free", kind: "local" };
-        recordActivity("Created a fictional local profile.");
-        saveState("Local profile created. No password was collected.");
-        renderAll();
-      }));
-      form.addEventListener("submit", function (event) { event.preventDefault(); });
+      const createProfileButton = element("button", "button secondary", "Create local profile");
+      createProfileButton.type = "submit";
+      form.append(label, createProfileButton);
+      form.addEventListener("submit", function (event) {
+        event.preventDefault();
+        notify("Please use the BSAD 281 Demo account instead of creating a local profile.");
+      });
       panel.appendChild(form);
     } else {
       panel.append(
         element("h2", "", "Hello, " + state.account.name),
-        element("p", "muted", (state.account.kind === "demo" ? "Demo account" : "Local profile") + " · " + currentPlan() + " membership"),
+        element("p", "muted", "Demo account · " + currentPlan() + " membership"),
         element("p", "", "Your collection and marketplace listings are stored only in this browser.")
       );
       panel.appendChild(makeButton("Sign out", "button secondary", function () {
@@ -854,6 +927,7 @@
   document.getElementById("collection-search").addEventListener("input", renderCollection);
   document.getElementById("collection-form").addEventListener("submit", function (event) {
     event.preventDefault();
+    if (!state.account) return notify("Sign in before managing your collection.", "error");
     const form = event.currentTarget;
     const values = Object.fromEntries(new FormData(form).entries());
     const name = values.name.trim();
@@ -889,6 +963,7 @@
 
   document.getElementById("combatant-form").addEventListener("submit", function (event) {
     event.preventDefault();
+    if (!state.account) return notify("Sign in to use the initiative tracker.", "error");
     const form = event.currentTarget;
     const values = Object.fromEntries(new FormData(form).entries());
     const selected = String(values.miniature || "").split("|");
@@ -958,6 +1033,7 @@
   document.getElementById("encounter-name").addEventListener("input", function (event) { state.encounterName = event.target.value; });
 
   document.getElementById("map-upload").addEventListener("change", function (event) {
+    if (!state.account) return notify("Sign in to manage your battle map.", "error");
     const file = event.target.files && event.target.files[0];
     if (!file) return;
     if (!(file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf"))) {
@@ -974,13 +1050,46 @@
     saveState("PDF map loaded in your browser. The file itself is not uploaded or saved.");
     renderMap();
   });
+  document.getElementById("map-source").addEventListener("change", function (event) {
+    if (!state.account) return notify("Sign in to manage your battle map.", "error");
+    state.mapSource = event.target.value === "pdf" ? "pdf" : "grasslands";
+    saveState(state.mapSource === "grasslands" ? "Grasslands map selected." : "PDF map selected.");
+    renderMap();
+  });
+  document.getElementById("fullscreen-map").addEventListener("click", function () {
+    const mapLayout = document.getElementById("map-layout");
+    if (!state.account) return notify("Sign in to manage your battle map.", "error");
+    if (!document.fullscreenEnabled || typeof mapLayout.requestFullscreen !== "function") {
+      return notify("Full screen is not supported by this browser.", "error");
+    }
+    mapLayout.requestFullscreen().catch(function () {
+      notify("The browser could not make the battle map full screen.", "error");
+    });
+  });
+  document.getElementById("fullscreen-exit").addEventListener("click", function () {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(function () {
+        notify("The browser could not exit full screen.", "error");
+      });
+    }
+  });
+  document.addEventListener("fullscreenchange", function () {
+    const mapLayout = document.getElementById("map-layout");
+    const isFullscreen = document.fullscreenElement === mapLayout;
+    const fullscreenButton = document.getElementById("fullscreen-map");
+    fullscreenButton.setAttribute("aria-pressed", isFullscreen ? "true" : "false");
+    fullscreenButton.textContent = isFullscreen ? "Full screen active" : "Full screen";
+    document.getElementById("fullscreen-exit").hidden = !isFullscreen;
+  });
   document.getElementById("toggle-grid").addEventListener("click", function () {
+    if (!state.account) return notify("Sign in to manage your battle map.", "error");
     state.gridEnabled = !state.gridEnabled;
     saveState(state.gridEnabled ? "Map grid enabled." : "Map grid hidden.");
     renderMap();
   });
   document.getElementById("marker-form").addEventListener("submit", function (event) {
     event.preventDefault();
+    if (!state.account) return notify("Sign in to manage your battle map.", "error");
     const combatantId = document.getElementById("marker-combatant").value;
     const combatant = getCombatant(combatantId);
     if (!combatant) return notify("Choose a combatant before placing a marker.", "error");
@@ -1003,14 +1112,14 @@
     const name = values.name.trim();
     const price = Number(values.price);
     const description = values.description.trim();
-    const seller = values.seller.trim() || state.account.name;
+    const seller = state.account.name;
     if (!name || !description || !seller) return notify("Product name, description, and seller are required.", "error");
     if (!Number.isFinite(price) || price <= 0 || price > 99999) return notify("Enter a price greater than $0 and no more than $99,999.", "error");
     const id = String(values.listingId || "");
     if (id) {
       const item = state.marketListings.find(function (listing) { return listing.id === id; });
       if (!item) return notify("That listing no longer exists.", "error");
-      Object.assign(item, { name: name, type: values.type, price: price, seller: seller, description: description });
+      Object.assign(item, { name: name, type: values.type, price: price, seller: seller, owner: state.account.name, description: description });
       recordActivity("Updated the marketplace listing \"" + name + "\".");
       resetListingForm();
       saveState("Listing updated.");
