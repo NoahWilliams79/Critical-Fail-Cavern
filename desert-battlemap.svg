@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title description">
+  <title id="title">Sunscar desert battlemap</title>
+  <desc id="description">A top-down desert map with sweeping dunes, a dry ravine, rocky outcrops, and a small oasis.</desc>
+  <defs>
+    <pattern id="sand" width="42" height="42" patternUnits="userSpaceOnUse">
+      <rect width="42" height="42" fill="#d5aa62"/>
+      <circle cx="7" cy="9" r="1.5" fill="#f1d395" opacity=".6"/>
+      <circle cx="29" cy="27" r="1.2" fill="#9e7446" opacity=".45"/>
+      <path d="M13 34l7-2m13-24 5-1" stroke="#f3d9a0" stroke-width="1.5" opacity=".55"/>
+    </pattern>
+    <linearGradient id="oasis" x2="0.9" y2="1">
+      <stop stop-color="#75b9ad"/>
+      <stop offset="1" stop-color="#347c7c"/>
+    </linearGradient>
+    <g id="cactus">
+      <ellipse cx="0" cy="9" rx="18" ry="7" fill="#493e2b" opacity=".3"/>
+      <path d="M-5 12V-26a6 6 0 0 1 12 0v38M-5-7h-13v-11a5 5 0 0 1 10 0v8m20 7h12v-13a5 5 0 0 0-10 0v9" fill="#54704a" stroke="#344a37" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M0-27v6m-15 4h3m28 7h3" stroke="#a9b376" stroke-width="2" stroke-linecap="round"/>
+    </g>
+    <g id="boulder">
+      <ellipse cx="2" cy="8" rx="28" ry="13" fill="#705638" opacity=".35"/>
+      <path d="M-27 2l7-20 18-9 23 7 11 22-12 17-28 2z" fill="#8a7658" stroke="#65553f" stroke-width="4"/>
+      <path d="M-14-13l13-8 15 5" fill="none" stroke="#b09b75" stroke-width="4" stroke-linecap="round"/>
+    </g>
+  </defs>
+  <rect width="1200" height="675" fill="url(#sand)"/>
+  <path d="M-40 118C126 34 250 64 375 123s211 65 327 1S921 48 1240 99v110c-203-57-364-31-488 31s-238 83-370 15S129 203-40 272z" fill="#edc77d" opacity=".66"/>
+  <path d="M-20 505c166-107 290-115 414-59s214 91 339 33 267-96 493-39v150c-182-54-317-48-461 12s-247 59-389-8S168 544-20 650z" fill="#bd8d4e" opacity=".55"/>
+  <path d="M-40 352c177-73 279-28 414 3s234 11 345-69 262-96 528-16" fill="none" stroke="#a97843" stroke-width="102" stroke-linecap="round"/>
+  <path d="M-40 352c177-73 279-28 414 3s234 11 345-69 262-96 528-16" fill="none" stroke="#886b48" stroke-width="74" stroke-linecap="round"/>
+  <path d="M-40 352c177-73 279-28 414 3s234 11 345-69 262-96 528-16" fill="none" stroke="#c5a06a" stroke-width="4" stroke-dasharray="3 18" opacity=".75"/>
+  <path d="M828 468c23-58 91-85 154-72s94 54 74 99-94 72-159 59-93-43-69-86z" fill="#8d7048" opacity=".38"/>
+  <path d="M827 449c22-51 88-76 147-63s87 48 68 88-89 66-149 54-88-39-66-79z" fill="url(#oasis)" stroke="#eee0ac" stroke-width="10"/>
+  <path d="M860 441c32-22 77-29 113-17m-101 65c29 12 66 12 93 1" fill="none" stroke="#b3ded0" stroke-width="5" stroke-linecap="round" opacity=".75"/>
+  <path d="M160 525l14-42 38-25 46 8 24 33-10 40-47 21-45-9zM1010 207l16-40 38-19 42 13 19 34-15 39-48 12-39-14z" fill="#7e684b" stroke="#5d4e3b" stroke-width="6"/>
+  <path d="M179 485l34-19 37 7m784-284 33-20 34 10" fill="none" stroke="#b79a6c" stroke-width="5" stroke-linecap="round"/>
+  <use href="#cactus" transform="translate(104 179) scale(1.2)"/>
+  <use href="#cactus" transform="translate(242 294) scale(.8)"/>
+  <use href="#cactus" transform="translate(509 142) scale(1.05)"/>
+  <use href="#cactus" transform="translate(704 553) scale(1.15)"/>
+  <use href="#cactus" transform="translate(1091 448) scale(.92)"/>
+  <use href="#cactus" transform="translate(970 573) scale(.75)"/>
+  <use href="#boulder" transform="translate(347 218) scale(.8)"/>
+  <use href="#boulder" transform="translate(369 229) scale(.55)"/>
+  <use href="#boulder" transform="translate(601 493) scale(1.15)"/>
+  <use href="#boulder" transform="translate(639 506) scale(.66)"/>
+  <use href="#boulder" transform="translate(934 315) scale(.72)"/>
+  <path d="M68 44h1064v587H68z" fill="none" stroke="#f0d7a2" stroke-width="8" opacity=".8"/>
+</svg>

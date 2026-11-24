@@ -8,8 +8,10 @@
     Creator: { collection: 100, listings: 10 },
     "Creator Pro": { collection: 10000, listings: Infinity }
   };
+  const MAX_LISTING_IMAGE_SIZE = 1024 * 1024;
   let storageUnavailable = false;
   let uploadedMapUrl = "";
+  let listingPreviewUrl = "";
   let noticeTimer;
 
   const storage = {
@@ -57,7 +59,9 @@
       mapSource: "grasslands",
       mapFileName: "",
       marketListings: [],
+      marketInventory: {},
       purchases: [],
+      purchasedDigitalListingIds: [],
       account: null,
       localProfile: null,
       activity: [
@@ -72,9 +76,26 @@
   const state = Object.assign(defaultState(), storedState && typeof storedState === "object" ? storedState : {});
   [
     "collection", "combatants", "savedEncounters", "mapMarkers",
-    "marketListings", "purchases", "activity"
+    "marketListings", "purchases", "purchasedDigitalListingIds", "activity"
   ].forEach(function (key) {
     if (!Array.isArray(state[key])) state[key] = [];
+  });
+  state.purchases.forEach(function (purchase) {
+    if ((purchase.type === "Digital STL" || purchase.type === "Battlemap") && purchase.listingId &&
+        state.purchasedDigitalListingIds.indexOf(purchase.listingId) === -1) {
+      state.purchasedDigitalListingIds.push(purchase.listingId);
+    }
+  });
+  if (!state.marketInventory || typeof state.marketInventory !== "object" || Array.isArray(state.marketInventory)) {
+    state.marketInventory = {};
+  }
+  state.marketListings.forEach(function (listing) {
+    if (listing.type !== "Physical") return;
+    const quantity = Number(listing.quantity);
+    listing.quantity = Number.isInteger(quantity) && quantity >= 0 ? quantity : 1;
+  });
+  state.marketListings = state.marketListings.filter(function (listing) {
+    return listing.type !== "Physical" || listing.quantity > 0;
   });
   function normalizeArmorClass(combatant) {
     const armorClass = Number(combatant.ac);
@@ -87,7 +108,11 @@
   if (!state.account || typeof state.account !== "object") state.account = null;
   if (!state.localProfile || typeof state.localProfile !== "object") state.localProfile = null;
   if (state.account && state.account.kind === "local") state.account = null;
-  if (!storedState || (storedState.mapSource !== "grasslands" && storedState.mapSource !== "pdf")) {
+  const isPurchasedBattlemapSource = MARKET_SAMPLE.some(function (item) {
+    return item.type === "Battlemap" && item.id === state.mapSource &&
+      state.purchasedDigitalListingIds.indexOf(item.id) !== -1;
+  });
+  if (!storedState || (state.mapSource !== "grasslands" && state.mapSource !== "pdf" && !isPurchasedBattlemapSource)) {
     state.mapSource = state.mapFileName ? "pdf" : "grasslands";
   }
   if (state.account && state.account.kind === "demo") state.account.name = "BSAD 281 Demo account";
@@ -131,6 +156,75 @@
     if (className) node.className = className;
     if (text !== undefined && text !== null) node.textContent = text;
     return node;
+  }
+
+  function escapeSvgText(value) {
+    return String(value).replace(/[&<>"']/g, function (character) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&apos;" }[character];
+    });
+  }
+
+  function generatedListingImage(item) {
+    let seed = 0;
+    String(item.id || item.name).split("").forEach(function (character) {
+      seed = (seed * 31 + character.charCodeAt(0)) >>> 0;
+    });
+    const hue = seed % 360;
+    const title = escapeSvgText(Array.from(String(item.name)).slice(0, 34).join(""));
+    const typeLabel = item.type === "Digital STL" ? "DIGITAL MODEL" : "TABLETOP MINIATURE";
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420">' +
+      '<defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="hsl(' + hue + ',38%,32%)"/><stop offset="1" stop-color="hsl(' + ((hue + 36) % 360) + ',44%,17%)"/></linearGradient>' +
+      '<pattern id="texture" width="32" height="32" patternUnits="userSpaceOnUse"><circle cx="4" cy="5" r="1" fill="#fff" opacity=".12"/><circle cx="21" cy="20" r="1.5" fill="#fff" opacity=".08"/></pattern></defs>' +
+      '<rect width="640" height="420" fill="url(#bg)"/><rect width="640" height="420" fill="url(#texture)"/>' +
+      '<circle cx="320" cy="177" r="119" fill="hsl(' + hue + ',50%,55%)" opacity=".23"/>' +
+      '<path d="M92 310c85-33 142-18 214-10 78 9 156-37 241-10l26 42H67z" fill="#19201c" opacity=".48"/>' +
+      '<ellipse cx="320" cy="299" rx="111" ry="25" fill="#1e2522" stroke="#d7c390" stroke-width="8"/>' +
+      '<path d="M299 283l-17-62 18-56 38 1 21 59-22 59z" fill="#d5c7a2" stroke="#283032" stroke-width="9" stroke-linejoin="round"/>' +
+      '<circle cx="319" cy="133" r="28" fill="#d9c9a4" stroke="#283032" stroke-width="9"/>' +
+      '<path d="M292 221l-42 44m107-45 38 45M303 277l-27 21m74-20 27 20M369 225l65-105" fill="none" stroke="#283032" stroke-width="15" stroke-linecap="round"/>' +
+      '<path d="M432 120l14-42 12 41z" fill="#d9c9a4" stroke="#283032" stroke-width="7" stroke-linejoin="round"/>' +
+      '<rect x="28" y="26" width="205" height="35" rx="17" fill="#101819" opacity=".72"/>' +
+      '<text x="44" y="49" fill="#f3e8c9" font-family="Arial,sans-serif" font-size="16" font-weight="700" letter-spacing="1">' + typeLabel + '</text>' +
+      '<text x="320" y="373" text-anchor="middle" fill="#fff8e7" font-family="Arial,sans-serif" font-size="23" font-weight="700">' + title + '</text>' +
+      '</svg>';
+    return "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg);
+  }
+
+  function marketplaceImageSource(item) {
+    return item.imageData || item.mapAsset || generatedListingImage(item);
+  }
+
+  function readListingImage(file) {
+    return new Promise(function (resolve, reject) {
+      const reader = new FileReader();
+      reader.addEventListener("load", function () {
+        if (typeof reader.result !== "string") {
+          reject(new Error("The browser returned no image data."));
+          return;
+        }
+        resolve(reader.result);
+      });
+      reader.addEventListener("error", function () {
+        reject(reader.error || new Error("The browser could not read the image."));
+      });
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function showListingImagePreview(src, alt) {
+    const image = document.getElementById("listing-image-preview-img");
+    image.src = src;
+    image.alt = alt;
+    document.getElementById("listing-image-preview").hidden = false;
+  }
+
+  function clearListingImagePreview() {
+    if (listingPreviewUrl) URL.revokeObjectURL(listingPreviewUrl);
+    listingPreviewUrl = "";
+    const image = document.getElementById("listing-image-preview-img");
+    image.removeAttribute("src");
+    image.alt = "";
+    document.getElementById("listing-image-preview").hidden = true;
   }
 
   function makeButton(text, className, handler) {
@@ -594,10 +688,26 @@
     renderAll();
   }
 
+  function renderMapSourceOptions() {
+    const select = document.getElementById("map-source");
+    const options = [
+      new Option("Grasslands (built-in)", "grasslands"),
+      new Option("Upload a PDF", "pdf")
+    ];
+    if (state.account) {
+      getPurchasedBattlemapListings().forEach(function (listing) {
+        options.push(new Option(listing.name, listing.id));
+      });
+    }
+    select.replaceChildren.apply(select, options);
+    select.value = state.account ? state.mapSource : "grasslands";
+  }
+
   function renderMap() {
     const surface = document.getElementById("map-surface");
     const mapLayout = document.getElementById("map-layout");
     const grasslands = document.getElementById("grasslands-map");
+    const marketplaceMapImage = document.getElementById("marketplace-battlemap");
     const placeholder = document.getElementById("map-placeholder");
     const frame = document.getElementById("map-pdf");
     const mapGrid = document.getElementById("map-grid");
@@ -614,7 +724,12 @@
     const legendList = document.getElementById("map-legend-list");
     const mapMessage = document.getElementById("map-message");
     renderFullscreenTurnControl();
-    mapSource.value = state.mapSource;
+    let purchasedMap = getPurchasedBattlemapListing(state.mapSource);
+    if (state.mapSource !== "grasslands" && state.mapSource !== "pdf" && !purchasedMap) {
+      state.mapSource = state.mapFileName ? "pdf" : "grasslands";
+      purchasedMap = null;
+    }
+    renderMapSourceOptions();
     mapSource.disabled = !state.account;
     pdfMapControl.hidden = !state.account || state.mapSource !== "pdf";
     mapUpload.disabled = !state.account || state.mapSource !== "pdf";
@@ -628,6 +743,7 @@
     fullscreenExit.hidden = document.fullscreenElement !== mapLayout;
     if (!state.account) {
       grasslands.hidden = true;
+      marketplaceMapImage.hidden = true;
       frame.hidden = true;
       placeholder.hidden = true;
       mapGrid.hidden = true;
@@ -641,10 +757,21 @@
     mapGrid.hidden = !state.gridEnabled;
     if (state.mapSource === "grasslands") {
       grasslands.hidden = false;
+      marketplaceMapImage.hidden = true;
+      frame.hidden = true;
+      placeholder.hidden = true;
+    } else if (purchasedMap) {
+      grasslands.hidden = true;
+      if (marketplaceMapImage.getAttribute("src") !== purchasedMap.mapAsset) {
+        marketplaceMapImage.setAttribute("src", purchasedMap.mapAsset);
+      }
+      marketplaceMapImage.alt = purchasedMap.name + " battlemap";
+      marketplaceMapImage.hidden = false;
       frame.hidden = true;
       placeholder.hidden = true;
     } else {
       grasslands.hidden = true;
+      marketplaceMapImage.hidden = true;
       if (uploadedMapUrl) {
         if (frame.src !== uploadedMapUrl) frame.src = uploadedMapUrl;
         frame.hidden = false;
@@ -770,47 +897,213 @@
     document.querySelector("#marker-form button[type='submit']").disabled = available.length === 0;
   }
 
+  function getListingQuantity(item) {
+    if (item.type !== "Physical") return null;
+    const isSample = MARKET_SAMPLE.some(function (sample) { return sample.id === item.id; });
+    const savedQuantity = isSample && Object.prototype.hasOwnProperty.call(state.marketInventory, item.id)
+      ? Number(state.marketInventory[item.id])
+      : Number(item.quantity);
+    if (Number.isInteger(savedQuantity) && savedQuantity >= 0) return savedQuantity;
+    return isSample ? Number(item.quantity) : 0;
+  }
+
+  function findBattlemapListing(listingId) {
+    return MARKET_SAMPLE.find(function (item) { return item.id === listingId && item.type === "Battlemap"; }) || null;
+  }
+
+  function getPurchasedBattlemapListing(listingId) {
+    const listing = findBattlemapListing(listingId);
+    return listing && state.purchasedDigitalListingIds.indexOf(listingId) !== -1 ? listing : null;
+  }
+
+  function getPurchasedBattlemapListings() {
+    return MARKET_SAMPLE.filter(function (item) {
+      return item.type === "Battlemap" && state.purchasedDigitalListingIds.indexOf(item.id) !== -1;
+    });
+  }
+
+  function hasPurchasedDigitalListing(item) {
+    return (item.type === "Digital STL" || item.type === "Battlemap") &&
+      state.purchasedDigitalListingIds.indexOf(item.id) !== -1;
+  }
+
+  function setListingQuantity(item, quantity) {
+    const isSample = MARKET_SAMPLE.some(function (sample) { return sample.id === item.id; });
+    if (isSample) state.marketInventory[item.id] = quantity;
+    else {
+      const listing = state.marketListings.find(function (candidate) { return candidate.id === item.id; });
+      if (listing) listing.quantity = quantity;
+    }
+  }
+
+  function syncListingQuantityField() {
+    const form = document.getElementById("listing-form");
+    const quantityField = form.elements.namedItem("quantity");
+    const isPhysical = form.elements.namedItem("type").value === "Physical";
+    quantityField.closest("label").hidden = !isPhysical;
+    quantityField.disabled = !isPhysical;
+    quantityField.required = isPhysical;
+  }
+
+  function simulatePurchase(item) {
+    if (state.account && (item.owner || item.seller) === state.account.name) {
+      return notify("You cannot purchase your own listing.", "error");
+    }
+    if (hasPurchasedDigitalListing(item)) {
+      return notify("You already purchased this digital STL.", "error");
+    }
+    const quantity = getListingQuantity(item);
+    if (item.type === "Physical" && quantity < 1) {
+      const dialog = document.getElementById("marketplace-detail-dialog");
+      if (dialog.open) dialog.close();
+      renderAll();
+      return notify("This physical listing is out of stock.", "error");
+    }
+    const remaining = item.type === "Physical" ? quantity - 1 : null;
+    const ownListing = state.marketListings.some(function (listing) { return listing.id === item.id; });
+    if (remaining !== null) {
+      setListingQuantity(item, remaining);
+      if (remaining === 0 && ownListing) {
+        state.marketListings = state.marketListings.filter(function (listing) { return listing.id !== item.id; });
+      }
+    }
+    if ((item.type === "Digital STL" || item.type === "Battlemap") &&
+        state.purchasedDigitalListingIds.indexOf(item.id) === -1) {
+      state.purchasedDigitalListingIds.push(item.id);
+    }
+    state.purchases.unshift({
+      id: createId("purchase"),
+      listingId: item.id,
+      name: item.name,
+      type: item.type,
+      price: Number(item.price),
+      quantity: 1,
+      description: item.description,
+      seller: item.owner || item.seller,
+      mapAsset: item.mapAsset,
+      purchasedAt: new Date().toISOString()
+    });
+    const soldOut = item.type === "Physical" && remaining === 0;
+    recordActivity("Simulated a purchase of \"" + item.name + "\". No payment was processed." +
+      (soldOut ? " The last unit sold and the listing was removed." : ""));
+    saveState("Demo purchase recorded for \"" + item.name + "\". No payment was processed." +
+      (soldOut ? " The last unit sold and the listing was removed." : ""));
+    const dialog = document.getElementById("marketplace-detail-dialog");
+    if (dialog.open) dialog.close();
+    renderAll();
+  }
+
+  function openListingDetails(item) {
+    const dialog = document.getElementById("marketplace-detail-dialog");
+    const content = document.getElementById("marketplace-detail-content");
+    document.getElementById("marketplace-detail-title").textContent = item.name;
+    const layout = element("div", "marketplace-detail-layout");
+    const image = element("img", "marketplace-detail-image");
+    image.src = marketplaceImageSource(item);
+    image.alt = item.name + " listing image";
+    layout.appendChild(image);
+
+    const details = element("div", "marketplace-detail-info");
+    details.append(
+      element("span", "tag", item.type),
+      element("p", "price marketplace-price", "$" + Number(item.price).toFixed(2)),
+      element("p", "", item.description),
+      element("p", "muted small", "Seller: " + (item.owner || item.seller))
+    );
+    if (item.type === "Physical") {
+      details.appendChild(element("p", "muted small", getListingQuantity(item) + " available"));
+    } else {
+      details.appendChild(element("p", "muted small", "Digital download"));
+    }
+    if (item.reviews) {
+      details.appendChild(element("p", "review", "★ " + item.rating + "/5 · " + item.reviews + " fictional reviews"));
+      if (item.review) details.appendChild(element("p", "muted", "“" + item.review + "”"));
+    } else {
+      details.appendChild(element("p", "muted small", "No reviews yet · fictional listing"));
+    }
+
+    const actions = element("div", "action-links");
+    const alreadyPurchased = hasPurchasedDigitalListing(item);
+    const isOwnListing = Boolean(state.account && (item.owner || item.seller) === state.account.name);
+    const purchaseButton = makeButton(alreadyPurchased ? "Purchased" : "Simulate purchase", "button", function () { simulatePurchase(item); });
+    if (isOwnListing) {
+      purchaseButton.disabled = true;
+      purchaseButton.title = "You cannot purchase your own listing.";
+      details.appendChild(element("p", "muted small", "You cannot purchase your own listing."));
+    } else if (alreadyPurchased) {
+      purchaseButton.disabled = true;
+      purchaseButton.title = "This digital STL is already in your purchases.";
+      details.appendChild(element("p", "muted small", "This digital STL is already in your purchases."));
+    }
+    actions.appendChild(purchaseButton);
+    details.appendChild(actions);
+    layout.appendChild(details);
+    content.replaceChildren(layout);
+    dialog.showModal();
+  }
+
   function renderMarketplace() {
+    syncListingQuantityField();
     const query = document.getElementById("market-search").value.trim().toLowerCase();
     const type = document.getElementById("market-type").value;
     document.querySelector("#listing-form [name='seller']").value = state.account ? state.account.name : "";
     const items = MARKET_SAMPLE.concat(state.marketListings).filter(function (item) {
       return (type === "all" || item.type === type) &&
+        (item.type !== "Physical" || getListingQuantity(item) > 0) &&
         [item.name, item.type, item.owner || item.seller, item.description].join(" ").toLowerCase().indexOf(query) !== -1;
     });
     document.getElementById("market-count").textContent = state.account ? items.length + " listing(s)" : "";
     const grid = document.getElementById("market-grid");
     grid.replaceChildren.apply(grid, items.map(function (item) {
-      const card = element("article", "card");
-      card.append(
+      const card = element("article", "card marketplace-card");
+      const productLink = element("a", "marketplace-product-link");
+      productLink.href = "#marketplace";
+      productLink.setAttribute("aria-haspopup", "dialog");
+      productLink.setAttribute("aria-label", "View listing details for " + item.name);
+      productLink.addEventListener("click", function (event) {
+        event.preventDefault();
+        openListingDetails(item);
+      });
+      const image = element("img", "marketplace-image");
+      image.src = marketplaceImageSource(item);
+      image.alt = item.name + " listing image";
+      image.loading = "lazy";
+      productLink.appendChild(image);
+      const content = element("div", "marketplace-card-content");
+      content.append(
         element("span", "tag", item.type),
         element("h2", "", item.name),
-        element("p", "", item.description),
-        element("p", "price", "$" + Number(item.price).toFixed(2) + " " + (item.type === "Digital STL" ? "· simulated digital file" : "· simulated physical item")),
+        element("p", "price marketplace-price", "$" + Number(item.price).toFixed(2)),
+        element("p", "marketplace-description", item.description),
         element("p", "muted small", "Seller: " + (item.owner || item.seller))
       );
+      if (item.type === "Physical") {
+        content.appendChild(element("p", "muted small", getListingQuantity(item) + " available"));
+      }
       if (item.reviews) {
-        card.append(element("p", "review", "★ " + item.rating + "/5 · " + item.reviews + " fictional reviews"),
+        content.append(element("p", "review", "★ " + item.rating + "/5 · " + item.reviews + " fictional reviews"),
           element("p", "muted small", "“" + item.review + "”"));
       } else {
-        card.append(element("p", "muted small", "No reviews yet · fictional listing"));
+        content.appendChild(element("p", "muted small", "No reviews yet · fictional listing"));
       }
+      productLink.appendChild(content);
+      card.appendChild(productLink);
       const actions = element("div", "action-links");
-      actions.appendChild(makeButton("Simulate purchase", "button", function () {
-        state.purchases.unshift({
-          id: createId("purchase"),
-          listingId: item.id,
-          name: item.name,
-          type: item.type,
-          price: Number(item.price),
-          purchasedAt: new Date().toISOString()
-        });
-        recordActivity("Simulated a purchase of \"" + item.name + "\". No payment was processed.");
-        saveState("Demo purchase recorded for \"" + item.name + "\". No payment was processed.");
-        renderAll();
-      }));
-      const own = state.marketListings.find(function (listing) { return listing.id === item.id; });
-      if (own && state.account) {
+      const ownListing = state.marketListings.find(function (listing) { return listing.id === item.id; });
+      const isOwnListing = Boolean(state.account && (item.owner || item.seller) === state.account.name);
+      const alreadyPurchased = hasPurchasedDigitalListing(item);
+      const purchaseButton = makeButton(alreadyPurchased ? "Purchased" : "Simulate purchase", "button", function () { simulatePurchase(item); });
+      if (isOwnListing) {
+        purchaseButton.disabled = true;
+        purchaseButton.title = "You cannot purchase your own listing.";
+        actions.appendChild(element("span", "muted small", "You cannot purchase your own listing."));
+      } else if (alreadyPurchased) {
+        purchaseButton.disabled = true;
+        purchaseButton.title = "This digital STL is already in your purchases.";
+        actions.appendChild(element("span", "muted small", "Already purchased."));
+      }
+      actions.appendChild(purchaseButton);
+      if (ownListing && state.account) {
         actions.appendChild(makeButton("Edit", "button secondary", function () { editListing(item.id); }));
         actions.appendChild(makeButton("Remove", "button secondary danger-button", function () {
           if (!window.confirm("Are you sure you want to remove your listing \"" + item.name + "\"?")) return;
@@ -835,13 +1128,24 @@
     if (!state.account) document.getElementById("listing-capacity").textContent += " Sign in to manage your listings.";
   }
 
+  function setListingFormOpen(isOpen, isEditing) {
+    const form = document.getElementById("listing-form");
+    const toggle = document.getElementById("create-listing-toggle");
+    form.hidden = !isOpen;
+    toggle.hidden = Boolean(isEditing);
+    toggle.textContent = isOpen ? "Close listing form" : "Create listing";
+    toggle.setAttribute("aria-expanded", String(isOpen));
+  }
+
   function resetListingForm() {
     const form = document.getElementById("listing-form");
     form.reset();
+    clearListingImagePreview();
     form.elements.namedItem("listingId").value = "";
     document.getElementById("listing-form-title").textContent = "Create a listing";
     form.querySelector("button[type='submit']").textContent = "Publish listing";
     document.getElementById("cancel-listing-edit").hidden = true;
+    setListingFormOpen(false, false);
     renderMarketplace();
   }
 
@@ -850,14 +1154,101 @@
     const item = state.marketListings.find(function (listing) { return listing.id === id; });
     if (!item) return;
     const form = document.getElementById("listing-form");
+    setListingFormOpen(true, true);
+    clearListingImagePreview();
+    form.elements.namedItem("image").value = "";
     ["listingId", "name", "type", "price", "description"].forEach(function (field) {
       form.elements.namedItem(field).value = item[field];
     });
+    form.elements.namedItem("quantity").value = item.type === "Physical" ? item.quantity : 1;
+    syncListingQuantityField();
+    showListingImagePreview(item.imageData || generatedListingImage(item), item.name + " listing image preview");
     form.elements.namedItem("seller").value = state.account.name;
     document.getElementById("listing-form-title").textContent = "Edit listing";
     form.querySelector("button[type='submit']").textContent = "Save listing";
     document.getElementById("cancel-listing-edit").hidden = false;
     form.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function importPurchasedBattlemap(purchase) {
+    if (!state.account) return notify("Sign in to import a purchased battlemap.", "error");
+    const listing = getPurchasedBattlemapListing(purchase.listingId);
+    if (purchase.type !== "Battlemap" || !listing || listing.mapAsset !== purchase.mapAsset) {
+      return notify("This battlemap is not in your purchases.", "error");
+    }
+    state.mapSource = listing.id;
+    recordActivity("Imported the \"" + listing.name + "\" battlemap.");
+    saveState("\"" + listing.name + "\" imported to the battle map.");
+    renderAll();
+    window.location.hash = "#battle-map";
+  }
+
+  function renderPurchaseHistory() {
+    const toggle = document.getElementById("purchase-history-toggle");
+    const panel = document.getElementById("purchase-history-panel");
+    const list = document.getElementById("purchase-history-list");
+    const empty = document.getElementById("purchase-history-empty");
+    const clearButton = document.getElementById("clear-purchase-history");
+    toggle.disabled = !state.account;
+    toggle.title = state.account ? "" : "Sign in to view your purchases.";
+    clearButton.disabled = !state.account ||
+      (state.purchases.length === 0 && state.purchasedDigitalListingIds.length === 0);
+    list.replaceChildren();
+    if (!state.account) {
+      panel.hidden = true;
+      toggle.setAttribute("aria-expanded", "false");
+      empty.hidden = true;
+      return;
+    }
+
+    state.purchases.forEach(function (purchase) {
+      const currentListing = MARKET_SAMPLE.concat(state.marketListings).find(function (item) {
+        return item.id === purchase.listingId;
+      });
+      const quantity = Number(purchase.quantity);
+      const count = Number.isSafeInteger(quantity) && quantity > 0 ? quantity : 1;
+      const purchasedAt = new Date(purchase.purchasedAt);
+      const date = Number.isNaN(purchasedAt.getTime()) ? "" : ": " + purchasedAt.toLocaleDateString();
+      const card = element("article", "card marketplace-card");
+      const image = element("img", "marketplace-image");
+      const imageItem = Object.assign({}, currentListing || {}, purchase, {
+        id: purchase.listingId || purchase.id,
+        mapAsset: purchase.mapAsset || (currentListing && currentListing.mapAsset)
+      });
+      image.src = marketplaceImageSource(imageItem);
+      image.alt = purchase.name + " listing image";
+      image.loading = "lazy";
+      card.appendChild(image);
+      const content = element("div", "marketplace-card-content");
+      content.append(
+        element("span", "tag", purchase.type),
+        element("h2", "", purchase.name),
+        element("p", "price marketplace-price", "$" + Number(purchase.price).toFixed(2)),
+        element("p", "marketplace-description", purchase.description || (currentListing && currentListing.description) || "Purchased marketplace item."),
+        element("p", "muted small", "Quantity: " + count),
+        element("p", "muted small", "Purchased" + date + " · demo only")
+      );
+      const seller = purchase.seller || (currentListing && (currentListing.owner || currentListing.seller));
+      if (seller) content.appendChild(element("p", "muted small", "Seller: " + seller));
+      if (purchase.type === "Battlemap") {
+        const listing = getPurchasedBattlemapListing(purchase.listingId);
+        if (listing && listing.mapAsset === purchase.mapAsset) {
+          const actions = element("div", "action-links");
+          const isActive = state.mapSource === listing.id;
+          const importButton = makeButton(isActive ? "On battle map" : "Import to battle map", "button secondary", function () {
+            importPurchasedBattlemap(purchase);
+          });
+          importButton.disabled = isActive;
+          actions.appendChild(importButton);
+          content.appendChild(actions);
+        }
+      }
+      card.appendChild(content);
+      list.appendChild(card);
+    });
+    const hasPurchases = state.purchases.length > 0;
+    list.hidden = !hasPurchases;
+    empty.hidden = hasPurchases;
   }
 
   function renderMembership() {
@@ -950,15 +1341,17 @@
     } else {
       panel.appendChild(element("p", "muted", "You have not created any listings yet."));
     }
-    panel.appendChild(element("h2", "", "Simulated purchases (" + state.purchases.length + ")"));
-    if (state.purchases.length) {
-      const purchases = element("ul", "account-listings");
-      state.purchases.forEach(function (purchase) {
-        purchases.appendChild(element("li", "", purchase.name + " · " + purchase.type + " · $" + Number(purchase.price).toFixed(2) + " · demo only"));
-      });
-      panel.appendChild(purchases);
-    } else {
-      panel.appendChild(element("p", "muted", "No demo purchases yet."));
+    if (state.account) {
+      panel.appendChild(element("h2", "", "Simulated purchases (" + state.purchases.length + ")"));
+      if (state.purchases.length) {
+        const purchases = element("ul", "account-listings");
+        state.purchases.forEach(function (purchase) {
+          purchases.appendChild(element("li", "", purchase.name + " · " + purchase.type + " · $" + Number(purchase.price).toFixed(2) + " · demo only"));
+        });
+        panel.appendChild(purchases);
+      } else {
+        panel.appendChild(element("p", "muted", "No demo purchases yet."));
+      }
     }
     panel.appendChild(makeButton("View membership plans", "button secondary", function () { window.location.hash = "#membership"; }));
   }
@@ -970,6 +1363,7 @@
     renderCombatants();
     renderMap();
     renderMarketplace();
+    renderPurchaseHistory();
     renderMembership();
     renderAccount();
   }
@@ -1139,8 +1533,17 @@
   });
   document.getElementById("map-source").addEventListener("change", function (event) {
     if (!state.account) return notify("Sign in to manage your battle map.", "error");
-    state.mapSource = event.target.value === "pdf" ? "pdf" : "grasslands";
-    saveState(state.mapSource === "grasslands" ? "Grasslands map selected." : "PDF map selected.");
+    const selectedSource = event.target.value;
+    const purchasedMap = getPurchasedBattlemapListing(selectedSource);
+    if (selectedSource !== "grasslands" && selectedSource !== "pdf" && !purchasedMap) {
+      renderMap();
+      return notify("Purchase a marketplace battlemap before selecting it.", "error");
+    }
+    state.mapSource = selectedSource;
+    const message = purchasedMap
+      ? purchasedMap.name + " battlemap selected."
+      : (state.mapSource === "grasslands" ? "Grasslands map selected." : "PDF map selected.");
+    saveState(message);
     renderMap();
   });
   document.getElementById("fullscreen-map").addEventListener("click", function () {
@@ -1221,6 +1624,52 @@
 
   document.getElementById("market-search").addEventListener("input", renderMarketplace);
   document.getElementById("market-type").addEventListener("change", renderMarketplace);
+  document.querySelector("#listing-form [name='type']").addEventListener("change", renderMarketplace);
+  document.getElementById("marketplace-detail-close").addEventListener("click", function () {
+    document.getElementById("marketplace-detail-dialog").close();
+  });
+  document.getElementById("marketplace-detail-dialog").addEventListener("click", function (event) {
+    if (event.target === event.currentTarget) event.currentTarget.close();
+  });
+  document.getElementById("create-listing-toggle").addEventListener("click", function () {
+    const form = document.getElementById("listing-form");
+    const opening = form.hidden;
+    setListingFormOpen(opening, false);
+    if (opening) form.elements.namedItem("name").focus();
+  });
+  document.getElementById("purchase-history-toggle").addEventListener("click", function () {
+    if (!state.account) return notify("Sign in to view your purchases.", "error");
+    const panel = document.getElementById("purchase-history-panel");
+    panel.hidden = !panel.hidden;
+    this.setAttribute("aria-expanded", String(!panel.hidden));
+  });
+  document.getElementById("clear-purchase-history").addEventListener("click", function () {
+    if (!state.account) return notify("Sign in to clear your purchase history.", "error");
+    if (!state.purchases.length && !state.purchasedDigitalListingIds.length) return;
+    if (!window.confirm("Are you sure you want to clear your purchase history and digital purchase status? Previously purchased digital listings will be available to purchase again.")) return;
+    if (findBattlemapListing(state.mapSource)) state.mapSource = "grasslands";
+    state.purchases = [];
+    state.purchasedDigitalListingIds = [];
+    recordActivity("Cleared the account purchase history.");
+    saveState("Purchase history and digital purchase status cleared.");
+    renderAll();
+  });
+  document.querySelector("#listing-form [name='image']").addEventListener("change", function (event) {
+    const file = event.currentTarget.files && event.currentTarget.files[0];
+    clearListingImagePreview();
+    if (!file) return;
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (allowedTypes.indexOf(file.type.toLowerCase()) === -1) {
+      event.currentTarget.value = "";
+      return notify("Choose a PNG, JPEG, WebP, or GIF image.", "error");
+    }
+    if (file.size > MAX_LISTING_IMAGE_SIZE) {
+      event.currentTarget.value = "";
+      return notify("Listing images must be 1 MB or smaller.", "error");
+    }
+    listingPreviewUrl = URL.createObjectURL(file);
+    showListingImagePreview(listingPreviewUrl, file.name);
+  });
   document.getElementById("listing-form").addEventListener("submit", function (event) {
     event.preventDefault();
     if (!state.account) return notify("Sign in before creating a marketplace listing.", "error");
@@ -1228,26 +1677,74 @@
     const values = Object.fromEntries(new FormData(form).entries());
     const name = values.name.trim();
     const price = Number(values.price);
+    const quantity = Number(values.quantity);
     const description = values.description.trim();
     const seller = state.account.name;
     if (!name || !description || !seller) return notify("Product name, description, and seller are required.", "error");
     if (!Number.isFinite(price) || price <= 0 || price > 99999) return notify("Enter a price greater than $0 and no more than $99,999.", "error");
-    const id = String(values.listingId || "");
-    if (id) {
-      const item = state.marketListings.find(function (listing) { return listing.id === id; });
-      if (!item) return notify("That listing no longer exists.", "error");
-      Object.assign(item, { name: name, type: values.type, price: price, seller: seller, owner: state.account.name, description: description });
-      recordActivity("Updated the marketplace listing \"" + name + "\".");
-      resetListingForm();
-      saveState("Listing updated.");
-    } else {
-      if (state.marketListings.length >= listingLimit()) return notify("Your " + currentPlan() + " plan has reached its active listing limit. Upgrade for more listings.", "error");
-      state.marketListings.push({ id: createId("market"), name: name, type: values.type, price: price, seller: seller, description: description, owner: state.account.name, rating: "", reviews: 0 });
-      recordActivity("Published the marketplace listing \"" + name + "\".");
-      resetListingForm();
-      saveState("Listing published. Purchase and payment are simulation-only.");
+    if (values.type === "Physical" && (!Number.isSafeInteger(quantity) || quantity < 1)) {
+      return notify("Physical listing quantity must be a positive whole number.", "error");
     }
-    renderAll();
+    const id = String(values.listingId || "");
+    const imageFile = form.elements.namedItem("image").files[0] || null;
+    if (imageFile) {
+      const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+      if (allowedTypes.indexOf(imageFile.type.toLowerCase()) === -1) return notify("Choose a PNG, JPEG, WebP, or GIF image.", "error");
+      if (imageFile.size > MAX_LISTING_IMAGE_SIZE) return notify("Listing images must be 1 MB or smaller.", "error");
+    }
+    if (!id && state.marketListings.length >= listingLimit()) {
+      return notify("Your " + currentPlan() + " plan has reached its active listing limit. Upgrade for more listings.", "error");
+    }
+    const submit = form.querySelector("button[type='submit']");
+    const saveListing = function (imageData) {
+      if (!state.account) return notify("Sign in before creating a marketplace listing.", "error");
+      if (id) {
+        const item = state.marketListings.find(function (listing) { return listing.id === id; });
+        if (!item) return notify("That listing no longer exists.", "error");
+        Object.assign(item, {
+          name: name,
+          type: values.type,
+          price: price,
+          quantity: values.type === "Physical" ? quantity : undefined,
+          seller: state.account.name,
+          owner: state.account.name,
+          description: description,
+          imageData: imageData || item.imageData || ""
+        });
+        recordActivity("Updated the marketplace listing \"" + name + "\".");
+        resetListingForm();
+        saveState("Listing updated.");
+      } else {
+        state.marketListings.push({
+          id: createId("market"),
+          name: name,
+          type: values.type,
+          price: price,
+          quantity: values.type === "Physical" ? quantity : undefined,
+          seller: state.account.name,
+          description: description,
+          owner: state.account.name,
+          rating: "",
+          reviews: 0,
+          imageData: imageData
+        });
+        recordActivity("Published the marketplace listing \"" + name + "\".");
+        resetListingForm();
+        saveState("Listing published. Purchase and payment are simulation-only.");
+      }
+      renderAll();
+    };
+    if (imageFile) {
+      submit.disabled = true;
+      readListingImage(imageFile).then(function (imageData) {
+        saveListing(imageData);
+      }, function () {
+        notify("Could not read the listing image. Choose a valid image and try again.", "error");
+        renderMarketplace();
+      });
+      return;
+    }
+    saveListing("");
   });
   document.getElementById("cancel-listing-edit").addEventListener("click", resetListingForm);
 

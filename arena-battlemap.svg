@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title description">
+  <title id="title">Citadel Ring arena battlemap</title>
+  <desc id="description">A top-down circular stone arena with tiered seating, four entry gates, and scattered cover pillars.</desc>
+  <defs>
+    <pattern id="stone" width="68" height="40" patternUnits="userSpaceOnUse">
+      <rect width="68" height="40" fill="#8c887d"/>
+      <path d="M0 1h68M33 1v19M0 20h68M17 20v20" fill="none" stroke="#69685f" stroke-width="2" opacity=".7"/>
+      <path d="M6 8h19m25 21h12" stroke="#b6ae9b" stroke-width="2" opacity=".6"/>
+    </pattern>
+    <radialGradient id="arenaFloor">
+      <stop stop-color="#c5ad7f"/>
+      <stop offset="1" stop-color="#947c59"/>
+    </radialGradient>
+    <g id="pillar">
+      <ellipse cx="0" cy="7" rx="28" ry="15" fill="#2c3030" opacity=".36"/>
+      <path d="M-22-4h44v15h-44z" fill="#625f57" stroke="#454944" stroke-width="4"/>
+      <ellipse cx="0" cy="-4" rx="22" ry="9" fill="#b5ac99" stroke="#56574f" stroke-width="4"/>
+      <path d="M-14-7h28" stroke="#d4c7ae" stroke-width="3" opacity=".75"/>
+    </g>
+    <g id="gate">
+      <path d="M-46 0v-23a46 46 0 0 1 92 0V0" fill="#514f49" stroke="#363a38" stroke-width="8"/>
+      <path d="M-30 0v-21a30 30 0 0 1 60 0V0" fill="#272d30" stroke="#b49e75" stroke-width="5"/>
+      <path d="M-39-2h78" stroke="#d1bd95" stroke-width="7"/>
+    </g>
+  </defs>
+  <rect width="1200" height="675" fill="#4a514f"/>
+  <path d="M0 0h1200v95H0zM0 580h1200v95H0zM0 95h100v485H0zM1100 95h100v485h-100z" fill="url(#stone)" stroke="#3c4442" stroke-width="8"/>
+  <path d="M116 112h968v451H116z" fill="#77766d" stroke="#c2b28f" stroke-width="8"/>
+  <path d="M150 140h900v395H150z" fill="#5c5e59" stroke="#484d49" stroke-width="10"/>
+  <circle cx="600" cy="337" r="220" fill="url(#stone)" stroke="#c8b895" stroke-width="15"/>
+  <circle cx="600" cy="337" r="175" fill="#736a58" stroke="#4e514d" stroke-width="10"/>
+  <circle cx="600" cy="337" r="158" fill="url(#arenaFloor)" stroke="#d0bd96" stroke-width="7"/>
+  <circle cx="600" cy="337" r="116" fill="none" stroke="#806d4d" stroke-width="4" stroke-dasharray="8 10" opacity=".8"/>
+  <circle cx="600" cy="337" r="46" fill="#9a835d" stroke="#6b5c44" stroke-width="6"/>
+  <path d="M600 291v92m-46-46h92" stroke="#d7c49c" stroke-width="4" opacity=".8"/>
+  <use href="#gate" transform="translate(600 121)"/>
+  <use href="#gate" transform="translate(600 553) rotate(180)"/>
+  <use href="#gate" transform="translate(380 337) rotate(-90)"/>
+  <use href="#gate" transform="translate(820 337) rotate(90)"/>
+  <use href="#pillar" transform="translate(507 265)"/>
+  <use href="#pillar" transform="translate(694 270)"/>
+  <use href="#pillar" transform="translate(516 414)"/>
+  <use href="#pillar" transform="translate(685 411)"/>
+  <path d="M191 158h63m-63 25h63m-63 25h63m672-50h63m-63 25h63m-63 25h63M191 465h63m-63 25h63m672-25h63m-63 25h63" stroke="#d0c3a9" stroke-width="8" stroke-linecap="round" opacity=".68"/>
+  <path d="M117 111h966v453H117z" fill="none" stroke="#e0cfaa" stroke-width="8"/>
+</svg>

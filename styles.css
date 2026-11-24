@@ -443,6 +443,37 @@ label input, label select, label textarea { display: block; margin-top: 6px; fon
 .map-jump { margin-left: 6px; white-space: nowrap; font-weight: 600; }
 .price { font-weight: 700; font-size: 1.1rem; }
 .review { margin-bottom: 4px; color: #684e05; font-weight: 600; }
+.marketplace-card { display: flex; flex-direction: column; overflow: hidden; padding: 0; }
+.marketplace-product-link { display: flex; flex: 1; flex-direction: column; min-width: 0; color: inherit; text-decoration: none; }
+.marketplace-product-link:hover h2 { text-decoration: underline; }
+.marketplace-image { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: #35433b; }
+.marketplace-card-content { display: flex; flex: 1; flex-direction: column; padding: 14px; }
+.marketplace-card-content h2 { margin: 8px 0; }
+.marketplace-price { margin: 2px 0 8px; }
+.marketplace-description { flex: 1; }
+.marketplace-card .action-links { margin-top: 12px; }
+.marketplace-card > .action-links { margin-top: 0; padding: 0 14px 14px; }
+.marketplace-detail-dialog {
+  width: min(920px, calc(100% - 28px));
+  max-width: 920px;
+  max-height: 90vh;
+  overflow: auto;
+  margin: auto;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  background: var(--surface-deep);
+}
+.marketplace-detail-dialog::backdrop { background: rgba(0, 0, 0, .72); }
+.marketplace-detail-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.marketplace-detail-header h2 { margin: 0; }
+.marketplace-detail-layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 22px; }
+.marketplace-detail-image { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: contain; border-radius: var(--radius); background: #35433b; }
+.marketplace-detail-info { display: flex; flex-direction: column; align-items: flex-start; }
+.marketplace-detail-info .action-links { margin-top: auto; }
+.listing-image-preview { max-width: 480px; }
+.listing-image-preview img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--radius); }
 .plan-card { display: flex; flex-direction: column; align-items: flex-start; }
 .plan-card .button { margin-top: auto; }
 #current-plan { margin: 18px 0; }
@@ -460,6 +491,7 @@ label input, label select, label textarea { display: block; margin-top: 6px; fon
 @media (max-width: 600px) {
   nav { gap: 10px 14px; }
   .collection-toolbar, .market-tools, .encounter-toolbar { grid-template-columns: 1fr; }
+  .marketplace-detail-layout { grid-template-columns: 1fr; }
   .map-layout { grid-template-columns: minmax(0, 1fr) minmax(150px, 42%); gap: 8px; }
   .map-surface { min-height: 300px; aspect-ratio: 4 / 3; }
   .profile-form { grid-template-columns: 1fr; }

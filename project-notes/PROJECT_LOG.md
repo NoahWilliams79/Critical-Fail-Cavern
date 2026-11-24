@@ -95,15 +95,20 @@ Copy this block for each session.
 ---
 ### Session — [Novemeber 24th, 2026] — driver: [Noah]
 
-- **Goal for this session:** Change the theme of website from base white to a theme
+- **Goal for this session:** complete Marketplace design
 - **Key prompts we gave Copilot** (paste the important ones):
-  1. change style of website to use grey blue gold as colours and use a skyrim styled cavern as a background
-  2. change database and collection should not be seperate pages
-  3. If signed out of account state its signed out in membership.
-- **What worked:** UI was modified correctly,
+  1. make the marketplace with similar ui as facebook marketplace, for any listings generate sample images and create an option to upload image with listing creation
+  2. Dont allow  user profile to purchase its own listings, give a quantity amount for physical and when o qty left remove listing from market place
+  3. make create listing button that opens up create listing menu in marketplace
+  4. Create a button beside the create listing called "Purchases" which shows what purchases the account have purchased 
+  5. Purchases tab should show to listing you purchased similar to the listings, make buton save size and color as creat listing 
+  6. each listing in marketplace should be able to be clicked and opened similarly to an amazon listing
+  7. for STL that have been purchased dont allow it to be purchased again 
+  8. Generate numerous fictional listings with various seller accounts ratings, with a large distribution of quantities for physical copies
+  9. Add purchasable battlemap into the marketplace, create 2 listings one with desert generated and one with arena themed battlemap. these must be able to be imported after purchase
+- **What worked:** market place is now functional, battlemaps now in marketplace, populated marketplace.
 - **What broke, and how we fixed it:** N/A
-- **Committed?** yes / no — commit message: yes - Refactor membership plans and enhance UI elements for improved user experience
-
+- **Committed?** yes / no — commit message: yes - Enhance marketplace functionality and UI: added battlemap listings, improved listing creation with image upload, and updated marketplace descriptions. Introduced new SVG battlemap assets for desert and arena themes.
 ---
 ## Things that broke (running list)
 

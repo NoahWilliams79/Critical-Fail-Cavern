@@ -159,7 +159,7 @@
 
     <section id="battle-map" data-view hidden>
       <h1>Battle map</h1>
-      <p class="muted">Choose the built-in grasslands map or upload a PDF, then drag encounter markers into position. Marker health follows the initiative tracker.</p>
+      <p class="muted">Choose the built-in grasslands map, an owned marketplace battlemap, or upload a PDF, then drag encounter markers into position. Marker health follows the initiative tracker.</p>
       <div class="map-toolbar card">
         <label>Map source<select id="map-source"><option value="grasslands">Grasslands (built-in)</option><option value="pdf">Upload a PDF</option></select></label>
         <label id="pdf-map-control" hidden>Upload PDF battle map<input type="file" id="map-upload" accept="application/pdf,.pdf"></label>
@@ -174,6 +174,7 @@
       <div id="map-layout" class="map-layout">
         <div id="map-surface" class="map-surface" aria-label="Battle map and creature markers">
           <img id="grasslands-map" class="grasslands-map" src="grasslands-map.svg" alt="Top-down grasslands battlemap with a winding trail, pond, trees, and boulders" hidden>
+          <img id="marketplace-battlemap" class="grasslands-map" alt="" hidden>
           <div id="map-placeholder" class="map-placeholder">
             <strong>Your cavern awaits</strong>
             <span>Upload a PDF to display your battle map. Markers can be placed on this surface in the meantime.</span>
@@ -202,21 +203,40 @@
 
     <section id="marketplace" data-view hidden>
       <h1>Marketplace</h1>
-      <p class="muted">Browse simulated physical miniatures and digital STL files. Purchases are demonstrations only; no payment is collected.</p>
+      <p class="muted">Browse simulated physical miniatures, digital STL files, and battle maps. Listings include generated artwork or an image uploaded by the seller. Purchases are demonstrations only; no payment is collected.</p>
       <div class="market-tools">
         <label class="search">Search listings<input type="search" id="market-search" placeholder="Product, seller, description…"></label>
-        <label>Listing type<select id="market-type"><option value="all">All listings</option><option value="Physical">Physical</option><option value="Digital STL">Digital STL</option></select></label>
+        <label>Listing type<select id="market-type"><option value="all">All listings</option><option value="Physical">Physical</option><option value="Digital STL">Digital STL</option><option value="Battlemap">Battlemaps</option></select></label>
       </div>
-      <form id="listing-form" class="card form-card">
+      <div class="action-links">
+        <button type="button" class="button" id="create-listing-toggle" aria-expanded="false" aria-controls="listing-form">Create listing</button>
+        <button type="button" class="button" id="purchase-history-toggle" aria-expanded="false" aria-controls="purchase-history-panel">Purchases</button>
+      </div>
+      <section id="purchase-history-panel" class="card" aria-labelledby="purchase-history-title" hidden>
+        <h2 id="purchase-history-title">Your purchases</h2>
+        <div class="action-links">
+          <button type="button" class="button secondary danger-button" id="clear-purchase-history" disabled>Clear history</button>
+        </div>
+        <div id="purchase-history-list" class="grid marketplace-grid"></div>
+        <p id="purchase-history-empty" class="muted" hidden>No purchases yet.</p>
+      </section>
+      <form id="listing-form" class="card form-card" hidden>
         <h2 id="listing-form-title">Create a listing</h2>
         <p class="muted" id="listing-capacity"></p>
         <input type="hidden" name="listingId">
         <div class="form-grid">
           <label>Product name<input name="name" required maxlength="80"></label>
           <label>Format<select name="type"><option>Physical</option><option>Digital STL</option></select></label>
+          <label id="listing-quantity-field">Quantity available<input name="quantity" type="number" min="1" step="1" value="1"></label>
           <label>Price (fictional)<input name="price" type="number" min="0.01" max="99999" step="0.01" required></label>
           <label>Seller account name<input name="seller" readonly></label>
           <label class="wide">Description<textarea name="description" rows="2" maxlength="500" required></textarea></label>
+          <label class="wide">Listing image<input name="image" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
+            <span class="muted small">Optional. PNG, JPEG, WebP, or GIF up to 1 MB. A generated image is used if you skip this.</span>
+          </label>
+          <div id="listing-image-preview" class="listing-image-preview wide" hidden>
+            <img id="listing-image-preview-img" alt="">
+          </div>
         </div>
         <div class="action-links">
           <button class="button" type="submit">Publish listing</button>
@@ -224,9 +244,17 @@
         </div>
       </form>
       <p class="muted" id="market-count"></p>
-      <div class="grid" id="market-grid"></div>
+      <div class="grid marketplace-grid" id="market-grid"></div>
       <p class="empty" id="market-empty" hidden>No listings match your search.</p>
     </section>
+
+    <dialog id="marketplace-detail-dialog" class="marketplace-detail-dialog" aria-labelledby="marketplace-detail-title">
+      <div class="marketplace-detail-header">
+        <h2 id="marketplace-detail-title">Listing details</h2>
+        <button type="button" class="button secondary" id="marketplace-detail-close">Close</button>
+      </div>
+      <div id="marketplace-detail-content"></div>
+    </dialog>
 
     <section id="membership" data-view hidden>
       <h1>Membership</h1>
