@@ -5,8 +5,8 @@
   const SIZES = ["Tiny", "Small", "Medium", "Large", "Huge"];
   const PLAN_LIMITS = {
     Free: { collection: 20, listings: 2 },
-    Pro: { collection: 100, listings: 10 },
-    Creator: { collection: 10000, listings: Infinity }
+    Creator: { collection: 100, listings: 10 },
+    "Creator Pro": { collection: 10000, listings: Infinity }
   };
   let storageUnavailable = false;
   let uploadedMapUrl = "";
@@ -77,6 +77,8 @@
   });
   if (!state.account || typeof state.account !== "object") state.account = null;
   if (!state.localProfile || typeof state.localProfile !== "object") state.localProfile = null;
+  if (state.account && state.account.membership === "Pro") state.account.membership = "Creator";
+  if (state.localProfile && state.localProfile.membership === "Pro") state.localProfile.membership = "Creator";
   if (!Number.isInteger(state.turnIndex)) state.turnIndex = 0;
   if (!Number.isInteger(state.round) || state.round < 1) state.round = 1;
 
@@ -182,7 +184,18 @@
   }
 
   function showView() {
-    const requested = (window.location.hash || "#dashboard").slice(1);
+    let requested = (window.location.hash || "#dashboard").slice(1);
+    if (requested === "collection") {
+      requested = "database";
+      window.history.replaceState(null, "", "#database");
+    }
+    if (requested === "database-browser" || requested === "my-collection") {
+      window.setTimeout(function () {
+        const target = document.getElementById(requested);
+        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 0);
+      requested = "database";
+    }
     const views = document.querySelectorAll("[data-view]");
     const exists = Array.prototype.some.call(views, function (view) { return view.id === requested; });
     const current = exists ? requested : "dashboard";
@@ -711,19 +724,26 @@
   function renderMembership() {
     const plan = currentPlan();
     const current = document.getElementById("current-plan");
-    current.replaceChildren(element("strong", "", "Current plan: " + plan));
-    current.appendChild(element("p", "muted", "Collection: " + collectionCount() + "/" + (PLAN_LIMITS[plan].collection === 10000 ? "generous" : PLAN_LIMITS[plan].collection) +
-      " · Active marketplace listings: " + state.marketListings.length + "/" + (PLAN_LIMITS[plan].listings === Infinity ? "unlimited" : PLAN_LIMITS[plan].listings)));
+    if (!state.account) {
+      current.replaceChildren(
+        element("strong", "", "Signed out"),
+        element("p", "muted", "No membership is active. Sign in or create a profile to choose a plan.")
+      );
+    } else {
+      current.replaceChildren(element("strong", "", "Current plan: " + plan));
+      current.appendChild(element("p", "muted", "Collection: " + collectionCount() + "/" + (PLAN_LIMITS[plan].collection === 10000 ? "generous" : PLAN_LIMITS[plan].collection) +
+        " · Active marketplace listings: " + state.marketListings.length + "/" + (PLAN_LIMITS[plan].listings === Infinity ? "unlimited" : PLAN_LIMITS[plan].listings)));
+    }
     const plans = [
       { name: "Free", price: "Free", collection: "Save up to 20 miniatures", listings: "2 active marketplace listings" },
-      { name: "Pro", price: "Simulated upgrade", collection: "Save up to 100 miniatures", listings: "10 active marketplace listings" },
-      { name: "Creator", price: "Simulated upgrade", collection: "Generous collection storage", listings: "Unlimited active marketplace listings" }
+      { name: "Creator", price: "4.99 CAD", collection: "Save up to 100 miniatures", listings: "10 active marketplace listings" },
+      { name: "Creator Pro", price: "12.99 CAD", collection: "Generous collection storage", listings: "Unlimited active marketplace listings" }
     ];
     const grid = document.getElementById("plan-grid");
     grid.replaceChildren.apply(grid, plans.map(function (item) {
       const card = element("article", "card plan-card");
       card.append(element("span", "tag", item.price), element("h2", "", item.name), element("p", "", item.collection), element("p", "", item.listings));
-      const button = makeButton(item.name === plan ? "Current plan" : "Choose " + item.name, "button secondary", function () {
+      const button = makeButton(state.account && item.name === plan ? "Current plan" : "Choose " + item.name, "button secondary", function () {
         if (!state.account) {
           notify("Sign in with the demo account or create a local profile before changing membership.", "error");
           window.location.hash = "#account";
@@ -735,7 +755,7 @@
         saveState(item.name === "Free" ? "Free plan selected." : item.name + " plan activated for this demo. No payment was taken.");
         renderAll();
       });
-      if (item.name === plan) button.disabled = true;
+      if (state.account && item.name === plan) button.disabled = true;
       card.appendChild(button);
       return card;
     }));

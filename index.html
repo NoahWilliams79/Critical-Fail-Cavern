@@ -12,8 +12,7 @@
     <a class="brand" href="#dashboard" id="brand-name">Critical Fail Cavern</a>
     <nav aria-label="Main navigation">
       <a href="#dashboard" data-nav>Dashboard</a>
-      <a href="#database" data-nav>Database</a>
-      <a href="#collection" data-nav>Collection</a>
+      <a href="#database" data-nav>Database &amp; Collection</a>
       <a href="#initiative" data-nav>Initiative</a>
       <a href="#battle-map" data-nav>Battle map</a>
       <a href="#marketplace" data-nav>Marketplace</a>
@@ -42,7 +41,7 @@
           <h2>Pick up where you left off</h2>
           <p>Browse miniatures, prepare an encounter, and place its combatants on your map.</p>
           <div class="action-links">
-            <a class="button secondary" href="#collection">My collection</a>
+            <a class="button secondary" href="#database">My database &amp; collection</a>
             <a class="button secondary" href="#initiative">Open initiative tracker</a>
             <a class="button secondary" href="#battle-map">Open battle map</a>
           </div>
@@ -51,8 +50,13 @@
     </section>
 
     <section id="database" data-view hidden>
-      <h1>Miniature database</h1>
+      <h1>Miniature database &amp; collection</h1>
       <p class="muted">Search fictional miniatures from independent, imaginary creators. Add one to your collection to use it in an encounter.</p>
+      <div class="action-links" aria-label="Database page sections">
+        <a class="button secondary" href="#database-browser">Browse database</a>
+        <a class="button secondary" href="#my-collection">My collection</a>
+      </div>
+      <h2 id="database-browser">Browse database</h2>
       <div class="filter-grid">
         <label class="search">Search miniatures
           <input type="search" id="database-search" placeholder="Name, type, creator…">
@@ -65,10 +69,7 @@
       <p class="muted" id="database-count"></p>
       <div class="grid" id="database-grid"></div>
       <p class="empty" id="database-empty" hidden>No miniatures match those filters.</p>
-    </section>
-
-    <section id="collection" data-view hidden>
-      <h1>My collection</h1>
+      <h2 id="my-collection">My collection</h2>
       <p class="muted" id="collection-capacity"></p>
       <form id="collection-form" class="card form-card">
         <h2>Add a miniature</h2>
