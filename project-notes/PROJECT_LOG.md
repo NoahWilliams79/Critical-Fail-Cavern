@@ -1,9 +1,7 @@
 # Project log
 
-Keep this up to date as you go — a few lines per work session is enough. It's much harder to reconstruct at the end.
-
-**Team name:**
-**Startup name:**
+**Team name:** Just Noah Williams
+**Startup name:** Critical Fail Cavern
 **Live site link:**
 
 ---
@@ -14,16 +12,49 @@ Copy this block for each session.
 
 ### Session — [date] — driver: [first name]
 
-- **Goal for this session:**
+- **Goal for this session:** Develop an app idea for startup. 
 - **Key prompts we gave Copilot** (paste the important ones):
-  1.
-  2.
-- **What worked:**
-- **What broke, and how we fixed it:**
+  1. N/A
+  2. N/A
+- **What worked:** A couple potential ideas were 
+- **What broke, and how we fixed it:** 
 - **Committed?** yes / no — commit message:
 
 ---
 
+### Session — [date] — driver: [first name]
+
+- **Goal for this session:** Develop an idea for startup 
+- **Key prompts we gave Copilot** (paste the important ones):
+  1. N/A
+  2. N/A
+- **What worked:**
+- **What broke, and how we fixed it:** 
+- **Committed?** yes / no — commit message:
+
+---
+### Session — [date] — driver: [first name]
+
+- **Goal for this session:** Develop an idea for startup 
+- **Key prompts we gave Copilot** (paste the important ones):
+  1. N/A
+  2. N/A
+- **What worked:**
+- **What broke, and how we fixed it:** 
+- **Committed?** yes / no — commit message:
+
+---
+### Session — [date] — driver: [first name]
+
+- **Goal for this session:** Develop an idea for startup 
+- **Key prompts we gave Copilot** (paste the important ones):
+  1. N/A
+  2. N/A
+- **What worked:**
+- **What broke, and how we fixed it:** 
+- **Committed?** yes / no — commit message:
+
+---
 ## Things that broke (running list)
 
 | Date | What went wrong | What we tried | What finally fixed it |

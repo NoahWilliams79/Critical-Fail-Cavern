@@ -3,91 +3,202 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>YourStartup</title>
-  <meta name="description" content="A student startup prototype for BSAD 281.">
+  <title>Critical Fail Cavern</title>
+  <meta name="description" content="A tabletop miniature collection, encounter and marketplace prototype.">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
-  <!-- =========================================================
-       HEADER: logo text + navigation.
-       Each link points to a "view" further down the page (#home, #explore, #about).
-       ========================================================= -->
   <header class="site-header">
-    <a class="brand" href="#home" id="brand-name">YourStartup</a>
-    <nav aria-label="Main">
-      <a href="#home">Home</a>
-      <a href="#explore">Explore</a>
-      <a href="#about">About</a>
+    <a class="brand" href="#dashboard" id="brand-name">Critical Fail Cavern</a>
+    <nav aria-label="Main navigation">
+      <a href="#dashboard" data-nav>Dashboard</a>
+      <a href="#database" data-nav>Database</a>
+      <a href="#collection" data-nav>Collection</a>
+      <a href="#initiative" data-nav>Initiative</a>
+      <a href="#battle-map" data-nav>Battle map</a>
+      <a href="#marketplace" data-nav>Marketplace</a>
+      <a href="#membership" data-nav>Membership</a>
+      <a href="#account" data-nav>Account</a>
     </nav>
   </header>
 
   <main>
+    <p id="notice" class="notice" role="status" aria-live="polite" hidden></p>
 
-    <!-- =======================================================
-         VIEW 1: HOME — what you do, for whom, and why it matters.
-         ======================================================= -->
-    <section id="home" data-view>
+    <section id="dashboard" data-view>
       <div class="hero">
-        <p class="eyebrow">Prototype</p>
-        <h1 id="tagline">One sentence that says what your startup does.</h1>
-        <p class="lead" id="pitch">
-          Who is your customer, what problem do they have, and why is your
-          solution better than what they use today?
-        </p>
-        <a class="button" href="#explore">See it in action</a>
+        <p class="eyebrow">Your tabletop, all in one place</p>
+        <h1 id="tagline">One cavern for every tabletop adventure.</h1>
+        <p class="lead" id="pitch">Discover miniatures, organize your collection, run encounters, and find your next tabletop treasure.</p>
+        <a class="button" href="#database">Explore the miniature database</a>
       </div>
-
-      <div class="steps">
-        <div class="card">
-          <h2>1. Step one</h2>
-          <p>Describe the first thing a customer does.</p>
-        </div>
-        <div class="card">
-          <h2>2. Step two</h2>
-          <p>Describe what happens next.</p>
-        </div>
-        <div class="card">
-          <h2>3. Step three</h2>
-          <p>Describe the result the customer gets.</p>
-        </div>
+      <div class="stats-grid" id="dashboard-stats"></div>
+      <div class="dashboard-grid">
+        <article class="card">
+          <h2>Recent activity</h2>
+          <ul id="activity-list" class="activity-list"></ul>
+        </article>
+        <article class="card">
+          <h2>Pick up where you left off</h2>
+          <p>Browse miniatures, prepare an encounter, and place its combatants on your map.</p>
+          <div class="action-links">
+            <a class="button secondary" href="#collection">My collection</a>
+            <a class="button secondary" href="#initiative">Open initiative tracker</a>
+            <a class="button secondary" href="#battle-map">Open battle map</a>
+          </div>
+        </article>
       </div>
     </section>
 
-    <!-- =======================================================
-         VIEW 2: EXPLORE — a list built from the fake data in data.js.
-         ======================================================= -->
-    <section id="explore" data-view hidden>
-      <h1>Explore</h1>
-      <p class="muted">These examples are fake. They come from <code>data.js</code>.</p>
-
-      <label class="search">
-        <span>Search</span>
-        <input type="search" id="search-box" placeholder="Type to filter…">
-      </label>
-
-      <p class="muted" id="saved-count"></p>
-      <div class="grid" id="listing-grid"></div>
-      <p class="empty" id="empty-message" hidden>Nothing matches your search.</p>
+    <section id="database" data-view hidden>
+      <h1>Miniature database</h1>
+      <p class="muted">Search fictional miniatures from independent, imaginary creators. Add one to your collection to use it in an encounter.</p>
+      <div class="filter-grid">
+        <label class="search">Search miniatures
+          <input type="search" id="database-search" placeholder="Name, type, creator…">
+        </label>
+        <label>Creature type<select id="database-type"></select></label>
+        <label>Size<select id="database-size"></select></label>
+        <label>Game system<select id="database-system"></select></label>
+        <label>Creator<select id="database-creator"></select></label>
+      </div>
+      <p class="muted" id="database-count"></p>
+      <div class="grid" id="database-grid"></div>
+      <p class="empty" id="database-empty" hidden>No miniatures match those filters.</p>
     </section>
 
-    <!-- =======================================================
-         VIEW 3: ABOUT — your team and your story.
-         ======================================================= -->
-    <section id="about" data-view hidden>
-      <h1>About us</h1>
-      <p>Tell the story of why your team started this company.</p>
-      <p>Use first names only, or no names at all — this site is public.</p>
+    <section id="collection" data-view hidden>
+      <h1>My collection</h1>
+      <p class="muted" id="collection-capacity"></p>
+      <form id="collection-form" class="card form-card">
+        <h2>Add a miniature</h2>
+        <div class="form-grid">
+          <label>Name<input name="name" required maxlength="80" placeholder="e.g. Mossback Sentinel"></label>
+          <label>Creature type<input name="creatureType" required maxlength="50" placeholder="Construct"></label>
+          <label>Size<select name="size" required></select></label>
+          <label>Game system<input name="gameSystem" required maxlength="60" placeholder="Cavern Quest"></label>
+          <label>Creator<input name="creator" maxlength="60" placeholder="Your own design"></label>
+          <label>Quantity<input name="quantity" type="number" min="1" max="999" value="1" required></label>
+          <label>Painting status<select name="paintingStatus" required>
+            <option>Unpainted</option><option>In progress</option><option>Painted</option>
+          </select></label>
+          <label class="wide">Notes<textarea name="notes" rows="2" maxlength="500" placeholder="Storage, details, or plans"></textarea></label>
+        </div>
+        <div class="action-links">
+          <button class="button" type="submit">Add to collection</button>
+          <button class="button secondary" type="button" id="cancel-collection-edit" hidden>Cancel edit</button>
+        </div>
+      </form>
+      <div class="collection-toolbar">
+        <label class="search">Filter collection
+          <input type="search" id="collection-search" placeholder="Search your miniatures…">
+        </label>
+      </div>
+      <div class="grid" id="collection-grid"></div>
+      <p class="empty" id="collection-empty" hidden>Your collection is empty. Add a miniature above or from the database.</p>
     </section>
 
+    <section id="initiative" data-view hidden>
+      <h1>Initiative tracker</h1>
+      <div class="encounter-toolbar card">
+        <div>
+          <p class="muted">Round <strong id="round-number">1</strong> · <span id="turn-label">No active combatants</span></p>
+          <div class="action-links">
+            <button type="button" class="button" id="next-turn">Next turn</button>
+            <button type="button" class="button secondary" id="save-encounter">Save encounter</button>
+          </div>
+        </div>
+        <label>Encounter name<input id="encounter-name" maxlength="60" value="Cavern Gate"></label>
+        <label>Saved encounters<select id="saved-encounters"></select></label>
+        <button type="button" class="button secondary" id="load-encounter">Load encounter</button>
+      </div>
+      <form id="combatant-form" class="card form-card">
+        <h2>Add a player or creature</h2>
+        <div class="form-grid">
+          <label>Name<input name="name" maxlength="80" placeholder="Defaults to selected miniature"></label>
+          <label>Combatant type<select name="kind"><option>Creature</option><option>Player</option></select></label>
+          <label>Miniature<select name="miniature"></select></label>
+          <label>Initiative<select name="initiativeMode"><option value="roll">Roll d20</option><option value="manual">Enter manually</option></select></label>
+          <label id="manual-initiative-label" hidden>Initiative score<input name="initiative" type="number" min="-10" max="50" value="10"></label>
+          <label>Current HP<input name="hp" type="number" min="1" max="9999" value="10" required></label>
+          <label>Maximum HP<input name="maxHp" type="number" min="1" max="9999" value="10" required></label>
+        </div>
+        <button class="button" type="submit">Add combatant</button>
+      </form>
+      <div id="combatant-list" class="combatant-list"></div>
+      <p id="combatant-empty" class="empty" hidden>No combatants yet. Add a player or creature to begin.</p>
+    </section>
+
+    <section id="battle-map" data-view hidden>
+      <h1>Battle map</h1>
+      <p class="muted">Upload a PDF map, then drag encounter markers into position. Marker health follows the initiative tracker.</p>
+      <div class="map-toolbar card">
+        <label>Upload PDF battle map<input type="file" id="map-upload" accept="application/pdf,.pdf"></label>
+        <button type="button" class="button secondary" id="toggle-grid" aria-pressed="false">Show grid</button>
+        <form id="marker-form" class="inline-form">
+          <label>Add encounter marker<select id="marker-combatant"></select></label>
+          <button type="submit" class="button">Place marker</button>
+        </form>
+      </div>
+      <p id="map-message" class="muted" role="status"></p>
+      <div id="map-surface" class="map-surface" aria-label="Battle map and creature markers">
+        <div id="map-placeholder" class="map-placeholder">
+          <strong>Your cavern awaits</strong>
+          <span>Upload a PDF to display your battle map. Markers can be placed on this surface in the meantime.</span>
+        </div>
+        <iframe id="map-pdf" title="Uploaded PDF battle map" hidden></iframe>
+        <div id="map-grid" class="map-grid" hidden></div>
+        <div id="marker-layer" class="marker-layer"></div>
+      </div>
+      <p class="muted small">PDF display uses your browser's built-in viewer. The selected file is not uploaded or saved; choose it again after refreshing.</p>
+    </section>
+
+    <section id="marketplace" data-view hidden>
+      <h1>Marketplace</h1>
+      <p class="muted">Browse simulated physical miniatures and digital STL files. Purchases are demonstrations only; no payment is collected.</p>
+      <div class="market-tools">
+        <label class="search">Search listings<input type="search" id="market-search" placeholder="Product, seller, description…"></label>
+        <label>Listing type<select id="market-type"><option value="all">All listings</option><option value="Physical">Physical</option><option value="Digital STL">Digital STL</option></select></label>
+      </div>
+      <form id="listing-form" class="card form-card">
+        <h2 id="listing-form-title">Create a listing</h2>
+        <p class="muted" id="listing-capacity"></p>
+        <input type="hidden" name="listingId">
+        <div class="form-grid">
+          <label>Product name<input name="name" required maxlength="80"></label>
+          <label>Format<select name="type"><option>Physical</option><option>Digital STL</option></select></label>
+          <label>Price (fictional)<input name="price" type="number" min="0.01" max="99999" step="0.01" required></label>
+          <label>Seller display name<input name="seller" maxlength="60" placeholder="Defaults to your profile"></label>
+          <label class="wide">Description<textarea name="description" rows="2" maxlength="500" required></textarea></label>
+        </div>
+        <div class="action-links">
+          <button class="button" type="submit">Publish listing</button>
+          <button class="button secondary" type="button" id="cancel-listing-edit" hidden>Cancel edit</button>
+        </div>
+      </form>
+      <p class="muted" id="market-count"></p>
+      <div class="grid" id="market-grid"></div>
+      <p class="empty" id="market-empty" hidden>No listings match your search.</p>
+    </section>
+
+    <section id="membership" data-view hidden>
+      <h1>Membership</h1>
+      <p class="muted">Choose a simulated plan. No payment details or real payment are involved.</p>
+      <p id="current-plan" class="card"></p>
+      <div id="plan-grid" class="steps"></div>
+    </section>
+
+    <section id="account" data-view hidden>
+      <h1>Sign in / account</h1>
+      <p class="muted">This prototype uses fictional local profiles only. Never enter a real password; no passwords are requested or stored.</p>
+      <div id="account-panel" class="card"></div>
+    </section>
   </main>
 
-  <!-- Keep this footer. Your site must say it is a student project. -->
   <footer class="site-footer">
     <p>Student prototype for BSAD 281 at St. Francis Xavier University. Not a real company — all data is fictional.</p>
   </footer>
 
-  <!-- Scripts load in this order: data first, then the code that uses it. -->
   <script src="data.js"></script>
   <script src="app.js"></script>
 </body>
