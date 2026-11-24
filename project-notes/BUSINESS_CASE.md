@@ -1,23 +1,17 @@
 # Business case
 
-Your prototype shows *what* the product looks like. This document explains *why* it could become a business. Answer in your own words and refer to course concepts by name. See the term project brief on Moodle for length and grading.
-
 ## 1. The idea
 
 The Critical Fail cavern is an all in one dashboard for small Dungeons and Dragons groups. The app targets D&D dungeon masters (DM’s), their campaign players, as well as the sculptors and creators who design, produce and collect mini figures. The current problem many players face is needing to visit multiple websites to monitor and manage everything needed for a combat initiative. With Critical Fail Cavern, this is solved by centralizing many of these sections by including an initiative tracker with a connected battle map, mini database, and even an online marketplace. The Initiative tracker allows for mini figures to be added directly from the database, and gives the user the ability to automatically roll initiative or manually enter a rolled value. The battle map allows for character markers to be placed directly on your map to clearly visualize character positioning.Maps can be uploaded as a PDF or purchased from the marketplace. Lastly the market place provides a spot for creators and sellers to sell maps,mini figure models or prints in a printable STL or physical model.Each figure model in the marketplace can be directly imported into the mini database . The company will make money by monetizing the app through subscription tiers, The base website app will be free but includes a database limit of 20 mini figures and two marketplace listings, while “Creator” plan would allow up to 100 mini figures and ten marketplace listings, and the “creator pro” plan would have unlimited marketplace and figure counts but would have the largest subscription. The proposed tier subscription prices are as follows: Basic Tier - Free, Creator - 4.99 CAD, and Creator Pro - 12.99 CAD. While not initially incorporated,ads and marketplace fees are additional potential revenue. 
 
 ## 2. Where IT creates value
 
-Which parts of the value chain does your product change, and how? Which course concepts apply (e.g. scale, distribution channels, differentiation, data, switching costs)?
+In Critical Fail Cavern, Information Technology creates value by changing Operations and Marketing and Sales. Operations are changed by improving efficiency by combining multiple D&D tools into a single web app. By implementing an integrated flow from marketplace to initiative tracker it differentiates itself from other apps by reducing the need to switch between different apps and reduces need to manually add information. Marketing and Sales changes as the marketplace creates a distribution channel between buyers and sellers. The increase of users on the app may increase switching costs, as a populated marketplace and comprehensive collection of minis will be more difficult to leave. Due to its cloud based hosting, as we scale up in users there is not a need for physical infrastructure to increase, saving the company in capital expenses but the operation costs will increase in usage. 
 
 ## 3. Network effects
 
-Does your product get more valuable as more people use it?
+Critical Fail Cavern functions as a two-sided market. The market consists of the buyers, who are individuals in search of purchasing figures and STL files, and the sellers, those who are selling sculpted figures and print files. As the number of sellers increase, it increases opportunities for buyers to purchase, resulting in an increase of buyers, which in turn makes the platform more attractive to sellers. This pattern becomes a cycle and increases the value  of the app, and the more users we get, the more brand recognition will be gained. More buyers attract more sellers, and more sellers attract more buyers. The issue of the empty network at launch will be combatted by launching the app as a free base model account, recruit sellers to pioneer marketplace and waive the transaction fees for a limited time until a foundational user base is met. The focus on launch is not the marketplace but the fundamental initiative tracker and mini database which is free on a. This is shown in the prototype by displaying the first couple sellers recruited and the free account tier of the app as well as full access to the initiative tracker and database.
 
-- Is it a **one-sided** or **two-sided** market? Who are the sides?
-- Where does the extra value come from as the network grows?
-- How would you solve the "empty network" problem at launch?
-- Point to the part of your prototype that shows this.
 
 ## 4. Can it be copied? (the moat question)
 
@@ -32,3 +26,5 @@ To make this app a reality, it would require the use of a cloud computing platfo
 ## 6. Risks and ethics
 
 While Critical Fail Cavern is a useful centralization of Dungeon master tools, there are strong risks associated with the app. The biggest ethics risk when it comes to a marketplace is copyright infringement of any maps, figures or models being sold. The marketplace also has the possibility of marketplace scams, fake listings, broken links, etc…, these would cause buyers to be more hesitant to purchase on the app. Most importantly, the website involves a login process and has a marketplace payment, this creates a possibility of a data breach very serious as this could reveal a users email, Name, username, payment info. To avoid these issues all payment would be conducted using a verified payment processor such as PayPal and all data will be secured using cloud such as Microsoft Azure. To counter Copyright infringement we will follow a pretty common system, Add an anonymous report function to flag or direct report portal system to report potentially copyrighted listings, a third party will investigate the claim and if found to be copyrighted, then the listing will be removed and the sellers account will be issued a warning, three warnings is an account ban. To avoid marketplace scams fraud, all Critical Fail Cavern  accounts who agree to use the marketplace must be verified. The marketplace will be monitored, and poor sellers will be distinguished by a 5 star rating system, and a clear refund policy will be implemented.
+
+AI use: All reasoning and wording are my own.
