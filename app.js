@@ -40,9 +40,9 @@
         { id: "collection-vale", miniatureId: "mini-vale", name: "Vale Watcher", creatureType: "Humanoid", size: "Medium", gameSystem: "Open Table", creator: "Lanternlight Workshop", quantity: 1, paintingStatus: "Unpainted", notes: "" }
       ],
       combatants: [
-        { id: "combatant-vale", name: "Vale Watcher", kind: "Player", miniatureId: "mini-vale", collectionEntryId: "collection-vale", miniatureSnapshot: null, initiative: 16, hp: 12, maxHp: 12 },
-        { id: "combatant-mossback", name: "Mossback Sentinel", kind: "Creature", miniatureId: "mini-mossback", collectionEntryId: "collection-mossback", miniatureSnapshot: null, initiative: 12, hp: 18, maxHp: 18 },
-        { id: "combatant-coppercap", name: "Coppercap Burrower", kind: "Creature", miniatureId: "mini-copper", collectionEntryId: "collection-coppercap", miniatureSnapshot: null, initiative: 8, hp: 7, maxHp: 7 }
+        { id: "combatant-vale", name: "Vale Watcher", kind: "Player", miniatureId: "mini-vale", collectionEntryId: "collection-vale", miniatureSnapshot: null, initiative: 16, hp: 12, maxHp: 12, ac: 10 },
+        { id: "combatant-mossback", name: "Mossback Sentinel", kind: "Creature", miniatureId: "mini-mossback", collectionEntryId: "collection-mossback", miniatureSnapshot: null, initiative: 12, hp: 18, maxHp: 18, ac: 10 },
+        { id: "combatant-coppercap", name: "Coppercap Burrower", kind: "Creature", miniatureId: "mini-copper", collectionEntryId: "collection-coppercap", miniatureSnapshot: null, initiative: 8, hp: 7, maxHp: 7, ac: 10 }
       ],
       turnIndex: 0,
       round: 1,
@@ -75,6 +75,14 @@
     "marketListings", "purchases", "activity"
   ].forEach(function (key) {
     if (!Array.isArray(state[key])) state[key] = [];
+  });
+  function normalizeArmorClass(combatant) {
+    const armorClass = Number(combatant.ac);
+    combatant.ac = Number.isInteger(armorClass) && armorClass >= 1 && armorClass <= 30 ? armorClass : 10;
+  }
+  state.combatants.forEach(normalizeArmorClass);
+  state.savedEncounters.forEach(function (encounter) {
+    if (Array.isArray(encounter.combatants)) encounter.combatants.forEach(normalizeArmorClass);
   });
   if (!state.account || typeof state.account !== "object") state.account = null;
   if (!state.localProfile || typeof state.localProfile !== "object") state.localProfile = null;
@@ -381,7 +389,7 @@
       const actions = element("div", "action-links");
       actions.appendChild(makeButton("Edit", "button secondary", function () { editCollectionEntry(entry.id); }));
       actions.appendChild(makeButton("Delete", "button secondary danger-button", function () {
-        if (!window.confirm("Remove " + entry.name + " from your collection?")) return;
+        if (!window.confirm("Are you sure you want to remove " + entry.name + " from your collection?")) return;
         state.collection = state.collection.filter(function (item) { return item.id !== entry.id; });
         state.combatants.forEach(function (combatant) {
           if (combatant.collectionEntryId === entry.id) combatant.collectionEntryId = "";
@@ -402,18 +410,37 @@
   }
 
   function renderMiniatureOptions() {
-    const select = document.querySelector("#combatant-form select[name='miniature']");
-    select.replaceChildren(new Option("No miniature", ""));
-    const databaseGroup = document.createElement("optgroup");
-    databaseGroup.label = "Miniature database";
-    MINIATURES.forEach(function (item) { databaseGroup.appendChild(new Option(item.name, "db|" + item.id)); });
-    select.appendChild(databaseGroup);
-    const collectionGroup = document.createElement("optgroup");
-    collectionGroup.label = "My collection";
-    state.collection.forEach(function (entry) {
-      collectionGroup.appendChild(new Option(entry.name + " (" + entry.quantity + ")", "collection|" + entry.id));
+    document.querySelectorAll(".combatant-form select[name='miniature']").forEach(function (select) {
+      select.replaceChildren(new Option("No miniature", ""));
+      const databaseGroup = document.createElement("optgroup");
+      databaseGroup.label = "Miniature database";
+      MINIATURES.forEach(function (item) { databaseGroup.appendChild(new Option(item.name, "db|" + item.id)); });
+      select.appendChild(databaseGroup);
+      const collectionGroup = document.createElement("optgroup");
+      collectionGroup.label = "My collection";
+      state.collection.forEach(function (entry) {
+        collectionGroup.appendChild(new Option(entry.name + " (" + entry.quantity + ")", "collection|" + entry.id));
+      });
+      if (state.account && state.collection.length) select.appendChild(collectionGroup);
     });
-    if (state.account && state.collection.length) select.appendChild(collectionGroup);
+  }
+
+  function setPlayerFormOpen(open) {
+    const panel = document.getElementById("player-form-panel");
+    const toggle = document.getElementById("add-player-toggle");
+    const isOpen = Boolean(open && state.account);
+    panel.hidden = !isOpen;
+    toggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    toggle.textContent = isOpen ? "Close Add Player" : "Add Player";
+  }
+
+  function setCreatureFormOpen(open) {
+    const panel = document.getElementById("creature-form-panel");
+    const toggle = document.getElementById("add-creature-toggle");
+    const isOpen = Boolean(open && state.account);
+    panel.hidden = !isOpen;
+    toggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    toggle.textContent = isOpen ? "Close Add Creature" : "Add Creature";
   }
 
   function selectedCombatant(combatant) {
@@ -441,7 +468,13 @@
     document.getElementById("load-encounter").disabled = !state.account;
     document.getElementById("encounter-name").disabled = !state.account;
     document.getElementById("saved-encounters").disabled = !state.account;
-    document.querySelector("#combatant-form button[type='submit']").disabled = !state.account;
+    document.getElementById("add-player-toggle").disabled = !state.account;
+    document.getElementById("add-creature-toggle").disabled = !state.account;
+    document.querySelectorAll(".combatant-form button[type='submit']").forEach(function (button) { button.disabled = !state.account; });
+    if (!state.account) {
+      setPlayerFormOpen(false);
+      setCreatureFormOpen(false);
+    }
     list.replaceChildren.apply(list, (state.account ? ordered : []).map(function (combatant) {
       const card = element("article", "card combatant-card" + (combatant.id === (active && active.id) ? " current-turn" : "") + (combatant.id === state.selectedCombatantId ? " selected-combatant" : ""));
       const top = element("div", "combatant-heading");
@@ -451,6 +484,7 @@
         notify(combatant.name + " selected. Its map marker is highlighted when placed.");
       });
       identity.append(selectButton, element("p", "muted small", combatant.kind + " · Initiative " + combatant.initiative));
+      identity.appendChild(element("p", "muted small", "Armor class: " + combatant.ac));
       const miniature = getCombatantMiniature(combatant);
       if (miniature) identity.appendChild(element("p", "muted small", "Miniature: " + miniature.name));
       top.append(identity, element("span", "tag", combatant.id === (active && active.id) ? "Current turn" : "Round " + state.round));
@@ -487,6 +521,7 @@
         window.location.hash = "#battle-map";
       }));
       actions.appendChild(makeButton("Remove", "button secondary danger-button", function () {
+        if (!window.confirm("Are you sure you want to remove " + combatant.name + " and its map marker from the encounter?")) return;
         const activeId = state.combatants[state.turnIndex] && state.combatants[state.turnIndex].id;
         const removedIndex = state.combatants.findIndex(function (item) { return item.id === combatant.id; });
         state.combatants = state.combatants.filter(function (item) { return item.id !== combatant.id; });
@@ -578,6 +613,7 @@
     const legend = document.getElementById("map-legend");
     const legendList = document.getElementById("map-legend-list");
     const mapMessage = document.getElementById("map-message");
+    renderFullscreenTurnControl();
     mapSource.value = state.mapSource;
     mapSource.disabled = !state.account;
     pdfMapControl.hidden = !state.account || state.mapSource !== "pdf";
@@ -640,7 +676,7 @@
       const legendEntry = element("li", "map-legend-entry" + (combatant.id === state.selectedCombatantId ? " legend-selected" : ""));
       const legendToken = element("span", "map-legend-token", String(markerNumber));
       legendToken.setAttribute("aria-hidden", "true");
-      legendEntry.append(legendToken, element("span", "", combatant.name + " (" + combatant.kind + ") · Initiative " + combatant.initiative + " · " + combatant.hp + "/" + combatant.maxHp + " HP"));
+      legendEntry.append(legendToken, element("span", "", combatant.name + " (" + combatant.kind + ") · Initiative " + combatant.initiative + " · AC " + combatant.ac + " · " + combatant.hp + "/" + combatant.maxHp + " HP"));
       legendList.appendChild(legendEntry);
       let pointerStart = null;
       let wasDragged = false;
@@ -702,6 +738,24 @@
     renderMarkerOptions();
   }
 
+  function renderFullscreenTurnControl() {
+    const mapLayout = document.getElementById("map-layout");
+    const control = document.getElementById("fullscreen-turn-control");
+    const active = state.combatants[state.turnIndex];
+    control.hidden = !state.account || document.fullscreenElement !== mapLayout;
+    document.getElementById("fullscreen-turn-label").textContent = active
+      ? combatantName(active) + "'s turn · Round " + state.round
+      : "No active combatants";
+    document.getElementById("fullscreen-end-turn").disabled = !state.account || state.combatants.length === 0;
+    const hpInput = document.getElementById("fullscreen-hp");
+    const acInput = document.getElementById("fullscreen-ac");
+    hpInput.value = active ? String(active.hp) : "";
+    hpInput.max = active ? String(active.maxHp) : "";
+    hpInput.disabled = !state.account || !active;
+    acInput.value = active ? String(active.ac) : "";
+    acInput.disabled = !state.account || !active;
+  }
+
   function renderMarkerOptions() {
     const select = document.getElementById("marker-combatant");
     if (!state.account) {
@@ -759,7 +813,7 @@
       if (own && state.account) {
         actions.appendChild(makeButton("Edit", "button secondary", function () { editListing(item.id); }));
         actions.appendChild(makeButton("Remove", "button secondary danger-button", function () {
-          if (!window.confirm("Remove your listing \"" + item.name + "\"?")) return;
+          if (!window.confirm("Are you sure you want to remove your listing \"" + item.name + "\"?")) return;
           state.marketListings = state.marketListings.filter(function (listing) { return listing.id !== item.id; });
           recordActivity("Removed the marketplace listing \"" + item.name + "\".");
           saveState("Listing removed.");
@@ -961,7 +1015,7 @@
   });
   document.getElementById("cancel-collection-edit").addEventListener("click", resetCollectionForm);
 
-  document.getElementById("combatant-form").addEventListener("submit", function (event) {
+  function addCombatant(event, kind) {
     event.preventDefault();
     if (!state.account) return notify("Sign in to use the initiative tracker.", "error");
     const form = event.currentTarget;
@@ -981,22 +1035,26 @@
     if (!name) return notify("Enter a combatant name or select a miniature.", "error");
     const hp = Number(values.hp);
     const maxHp = Number(values.maxHp);
+    const armorClass = Number(values.ac);
     if (!Number.isInteger(hp) || !Number.isInteger(maxHp) || hp < 1 || maxHp < 1 || hp > maxHp || maxHp > 9999) {
       return notify("Hit points must be whole numbers, with current HP no greater than maximum HP.", "error");
+    }
+    if (!Number.isInteger(armorClass) || armorClass < 1 || armorClass > 30) {
+      return notify("Armor class must be a whole number between 1 and 30.", "error");
     }
     const initiative = values.initiativeMode === "roll" ? Math.floor(Math.random() * 20) + 1 : Number(values.initiative);
     if (!Number.isFinite(initiative) || initiative < -10 || initiative > 50) return notify("Initiative must be between -10 and 50.", "error");
     const newCombatant = {
       id: createId("combatant"),
       name: name,
-      kind: values.kind,
+      kind: kind,
       miniatureId: miniature && miniature.miniatureId ? miniature.miniatureId : miniature && miniature.id && getMiniature(miniature.id) ? miniature.id : "",
       collectionEntryId: collectionEntryId,
       miniatureSnapshot: miniature ? {
         name: miniature.name, creatureType: miniature.creatureType, size: miniature.size,
         gameSystem: miniature.gameSystem, creator: miniature.creator
       } : null,
-      initiative: initiative, hp: hp, maxHp: maxHp
+      initiative: initiative, hp: hp, maxHp: maxHp, ac: armorClass
     };
     state.combatants.push(newCombatant);
     sortEncounter();
@@ -1006,15 +1064,44 @@
     form.reset();
     form.elements.namedItem("hp").value = "10";
     form.elements.namedItem("maxHp").value = "10";
-    document.getElementById("manual-initiative-label").hidden = true;
+    form.querySelector("[data-manual-initiative]").hidden = true;
     form.elements.namedItem("initiative").required = false;
+    if (kind === "Player") setPlayerFormOpen(false);
+    else setCreatureFormOpen(false);
     saveState(name + " added with initiative " + initiative + ".");
     renderAll();
+  }
+  document.getElementById("player-form").addEventListener("submit", function (event) { addCombatant(event, "Player"); });
+  document.getElementById("creature-form").addEventListener("submit", function (event) { addCombatant(event, "Creature"); });
+  document.querySelectorAll(".combatant-form [name='initiativeMode']").forEach(function (select) {
+    select.addEventListener("change", function (event) {
+      const form = event.currentTarget.form;
+      const manual = event.currentTarget.value === "manual";
+      form.querySelector("[data-manual-initiative]").hidden = !manual;
+      form.elements.namedItem("initiative").required = manual;
+    });
   });
-  document.querySelector("#combatant-form [name='initiativeMode']").addEventListener("change", function (event) {
-    const manual = event.target.value === "manual";
-    document.getElementById("manual-initiative-label").hidden = !manual;
-    document.querySelector("#combatant-form [name='initiative']").required = manual;
+  document.getElementById("add-player-toggle").addEventListener("click", function () {
+    if (!state.account) return notify("Sign in to use the initiative tracker.", "error");
+    setPlayerFormOpen(document.getElementById("player-form-panel").hidden);
+  });
+  document.getElementById("cancel-add-player").addEventListener("click", function () {
+    const form = document.getElementById("player-form");
+    form.reset();
+    form.querySelector("[data-manual-initiative]").hidden = true;
+    form.elements.namedItem("initiative").required = false;
+    setPlayerFormOpen(false);
+  });
+  document.getElementById("add-creature-toggle").addEventListener("click", function () {
+    if (!state.account) return notify("Sign in to use the initiative tracker.", "error");
+    setCreatureFormOpen(document.getElementById("creature-form-panel").hidden);
+  });
+  document.getElementById("cancel-add-creature").addEventListener("click", function () {
+    const form = document.getElementById("creature-form");
+    form.reset();
+    form.querySelector("[data-manual-initiative]").hidden = true;
+    form.elements.namedItem("initiative").required = false;
+    setCreatureFormOpen(false);
   });
   document.getElementById("next-turn").addEventListener("click", function () {
     if (!state.combatants.length) return notify("Add a combatant before advancing turns.", "error");
@@ -1073,6 +1160,35 @@
       });
     }
   });
+  document.getElementById("fullscreen-end-turn").addEventListener("click", function () {
+    document.getElementById("next-turn").click();
+  });
+  document.getElementById("fullscreen-hp").addEventListener("change", function (event) {
+    const combatant = state.combatants[state.turnIndex];
+    const hp = Number(event.currentTarget.value);
+    if (!state.account) return notify("Sign in to edit combatant hit points.", "error");
+    if (!combatant || !Number.isInteger(hp) || hp < 0 || hp > Number(combatant.maxHp)) {
+      notify("Hit points must be a whole number between 0 and the combatant's maximum HP.", "error");
+      renderFullscreenTurnControl();
+      return;
+    }
+    combatant.hp = hp;
+    saveState(combatant.name + "'s hit points updated.");
+    renderAll();
+  });
+  document.getElementById("fullscreen-ac").addEventListener("change", function (event) {
+    const combatant = state.combatants[state.turnIndex];
+    const armorClass = Number(event.currentTarget.value);
+    if (!state.account) return notify("Sign in to edit combatant armor class.", "error");
+    if (!combatant || !Number.isInteger(armorClass) || armorClass < 1 || armorClass > 30) {
+      notify("Armor class must be a whole number between 1 and 30.", "error");
+      renderFullscreenTurnControl();
+      return;
+    }
+    combatant.ac = armorClass;
+    saveState(combatant.name + "'s armor class updated.");
+    renderAll();
+  });
   document.addEventListener("fullscreenchange", function () {
     const mapLayout = document.getElementById("map-layout");
     const isFullscreen = document.fullscreenElement === mapLayout;
@@ -1080,6 +1196,7 @@
     fullscreenButton.setAttribute("aria-pressed", isFullscreen ? "true" : "false");
     fullscreenButton.textContent = isFullscreen ? "Full screen active" : "Full screen";
     document.getElementById("fullscreen-exit").hidden = !isFullscreen;
+    renderFullscreenTurnControl();
   });
   document.getElementById("toggle-grid").addEventListener("click", function () {
     if (!state.account) return notify("Sign in to manage your battle map.", "error");

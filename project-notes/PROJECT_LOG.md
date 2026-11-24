@@ -76,6 +76,34 @@ Copy this block for each session.
 - **What worked:** account login enables features to display information, marketplace now uses account name for seller name, demo account fully set up, generated a base battlemap, legend and added full screen capability.
 - **What broke, and how we fixed it:** 
 - **Committed?** yes / no — commit message: yes - Refactor battle map functionality to include built-in grasslands map option, enhance UI for account management, and implement full-screen capabilities. Update marketplace to use account display names and improve collection management for signed-in users.
+
+---
+### Session — [Novemeber 24th, 2026] — driver: [Noah]
+
+- **Goal for this session:** Initiative tracker and battle map completion
+- **Key prompts we gave Copilot** (paste the important ones):
+  1. when battle map open in full screen, impliment the inititive tracker by showing  whos turn it is and end turn option
+  2. Allow option to modify HP and and Armour class in the fullscreen
+  3. make inititive player addition a secondary menu that opens when you select "Add Player"
+  4. create a seperate button to open creature menu
+  5. put add creature button to the right of add player
+  6. make a secondary "are you sure"  prompt when you attempt to delete
+- **What worked:**  Inititive tracker and fullscreen battle map management created, and improved UI management
+- **What broke, and how we fixed it:** N/A
+- **Committed?** yes / no — commit message: yes - Implement initiative tracker and armor class management in fullscreen mode; enhance combatant forms with armor class input and improve UI for adding players and creatures.
+
+---
+### Session — [Novemeber 24th, 2026] — driver: [Noah]
+
+- **Goal for this session:** Change the theme of website from base white to a theme
+- **Key prompts we gave Copilot** (paste the important ones):
+  1. change style of website to use grey blue gold as colours and use a skyrim styled cavern as a background
+  2. change database and collection should not be seperate pages
+  3. If signed out of account state its signed out in membership.
+- **What worked:** UI was modified correctly,
+- **What broke, and how we fixed it:** N/A
+- **Committed?** yes / no — commit message: yes - Refactor membership plans and enhance UI elements for improved user experience
+
 ---
 ## Things that broke (running list)
 

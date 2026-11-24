@@ -113,19 +113,46 @@
         <label>Saved encounters<select id="saved-encounters"></select></label>
         <button type="button" class="button secondary" id="load-encounter">Load encounter</button>
       </div>
-      <form id="combatant-form" class="card form-card">
-        <h2>Add a player or creature</h2>
-        <div class="form-grid">
-          <label>Name<input name="name" maxlength="80" placeholder="Defaults to selected miniature"></label>
-          <label>Combatant type<select name="kind"><option>Creature</option><option>Player</option></select></label>
-          <label>Miniature<select name="miniature"></select></label>
-          <label>Initiative<select name="initiativeMode"><option value="roll">Roll d20</option><option value="manual">Enter manually</option></select></label>
-          <label id="manual-initiative-label" hidden>Initiative score<input name="initiative" type="number" min="-10" max="50" value="10"></label>
-          <label>Current HP<input name="hp" type="number" min="1" max="9999" value="10" required></label>
-          <label>Maximum HP<input name="maxHp" type="number" min="1" max="9999" value="10" required></label>
-        </div>
-        <button class="button" type="submit">Add combatant</button>
-      </form>
+      <div class="action-links">
+        <button type="button" class="button secondary" id="add-player-toggle" aria-expanded="false" aria-controls="player-form-panel">Add Player</button>
+        <button type="button" class="button secondary" id="add-creature-toggle" aria-expanded="false" aria-controls="creature-form-panel">Add Creature</button>
+      </div>
+      <section id="player-form-panel" class="card form-card" hidden>
+        <h2>Add a player</h2>
+        <form id="player-form" class="combatant-form">
+          <div class="form-grid">
+            <label>Name<input name="name" maxlength="80" placeholder="Player name"></label>
+            <label>Miniature<select name="miniature"></select></label>
+            <label>Initiative<select name="initiativeMode"><option value="roll">Roll d20</option><option value="manual">Enter manually</option></select></label>
+            <label data-manual-initiative hidden>Initiative score<input name="initiative" type="number" min="-10" max="50" value="10"></label>
+            <label>Current HP<input name="hp" type="number" min="1" max="9999" value="10" required></label>
+            <label>Maximum HP<input name="maxHp" type="number" min="1" max="9999" value="10" required></label>
+            <label>Armor class<input name="ac" type="number" min="1" max="30" value="10" required></label>
+          </div>
+          <div class="action-links">
+            <button class="button" type="submit">Add player</button>
+            <button class="button secondary" type="button" id="cancel-add-player">Cancel</button>
+          </div>
+        </form>
+      </section>
+      <section id="creature-form-panel" class="card form-card" hidden>
+        <h2>Add a creature</h2>
+        <form id="creature-form" class="combatant-form">
+          <div class="form-grid">
+            <label>Name<input name="name" maxlength="80" placeholder="Defaults to selected miniature"></label>
+            <label>Miniature<select name="miniature"></select></label>
+            <label>Initiative<select name="initiativeMode"><option value="roll">Roll d20</option><option value="manual">Enter manually</option></select></label>
+            <label data-manual-initiative hidden>Initiative score<input name="initiative" type="number" min="-10" max="50" value="10"></label>
+            <label>Current HP<input name="hp" type="number" min="1" max="9999" value="10" required></label>
+            <label>Maximum HP<input name="maxHp" type="number" min="1" max="9999" value="10" required></label>
+            <label>Armor class<input name="ac" type="number" min="1" max="30" value="10" required></label>
+          </div>
+          <div class="action-links">
+            <button class="button" type="submit">Add creature</button>
+            <button class="button secondary" type="button" id="cancel-add-creature">Cancel</button>
+          </div>
+        </form>
+      </section>
       <div id="combatant-list" class="combatant-list"></div>
       <p id="combatant-empty" class="empty" hidden>No combatants yet. Add a player or creature to begin.</p>
     </section>
@@ -154,6 +181,15 @@
           <iframe id="map-pdf" title="Uploaded PDF battle map" hidden></iframe>
           <div id="map-grid" class="map-grid" hidden></div>
           <div id="marker-layer" class="marker-layer"></div>
+          <div id="fullscreen-turn-control" class="fullscreen-turn-control" hidden>
+            <div>
+              <p class="muted small">Current turn</p>
+              <strong id="fullscreen-turn-label" aria-live="polite"></strong>
+            </div>
+            <label>HP<input id="fullscreen-hp" type="number" min="0" step="1" disabled></label>
+            <label>AC<input id="fullscreen-ac" type="number" min="1" max="30" step="1" disabled></label>
+            <button type="button" class="button" id="fullscreen-end-turn">End turn</button>
+          </div>
           <button type="button" class="button secondary fullscreen-exit" id="fullscreen-exit" hidden>Exit full screen</button>
         </div>
         <section id="map-legend" class="card map-legend" aria-labelledby="map-legend-title" hidden>
