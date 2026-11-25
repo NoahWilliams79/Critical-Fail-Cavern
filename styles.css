@@ -443,6 +443,12 @@ label input, label select, label textarea { display: block; margin-top: 6px; fon
 .map-jump { margin-left: 6px; white-space: nowrap; font-weight: 600; }
 .price { font-weight: 700; font-size: 1.1rem; }
 .review { margin-bottom: 4px; color: #684e05; font-weight: 600; }
+.marketplace-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.marketplace-heading h1 { margin-top: 0; }
+.marketplace-heading .button { flex: 0 0 auto; margin-top: 0; }
+.button.is-open { background: var(--gold); color: #151922; }
+.button.is-open:hover { background: var(--gold-light); }
+.collection-image { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; margin-bottom: 12px; border-radius: var(--radius); background: #35433b; }
 .marketplace-card { display: flex; flex-direction: column; overflow: hidden; padding: 0; }
 .marketplace-product-link { display: flex; flex: 1; flex-direction: column; min-width: 0; color: inherit; text-decoration: none; }
 .marketplace-product-link:hover h2 { text-decoration: underline; }
@@ -468,12 +474,56 @@ label input, label select, label textarea { display: block; margin-top: 6px; fon
 .marketplace-detail-dialog::backdrop { background: rgba(0, 0, 0, .72); }
 .marketplace-detail-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
 .marketplace-detail-header h2 { margin: 0; }
+.confirmation-dialog {
+  width: min(440px, calc(100% - 28px));
+  margin: auto;
+  padding: 24px;
+  border: 1px solid rgba(196, 164, 93, .6);
+  border-radius: var(--radius);
+  color: var(--text);
+  background: linear-gradient(145deg, rgba(36, 48, 60, .98), rgba(20, 31, 42, .98));
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .5);
+}
+.confirmation-dialog::backdrop { background: rgba(3, 8, 12, .72); backdrop-filter: blur(3px); }
+.confirmation-dialog h2 { margin: 0 0 12px; color: var(--gold-light); }
+.confirmation-dialog p { margin: 0; }
+.confirmation-actions { justify-content: flex-end; margin-top: 20px; }
 .marketplace-detail-layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 22px; }
 .marketplace-detail-image { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: contain; border-radius: var(--radius); background: #35433b; }
 .marketplace-detail-info { display: flex; flex-direction: column; align-items: flex-start; }
 .marketplace-detail-info .action-links { margin-top: auto; }
 .listing-image-preview { max-width: 480px; }
 .listing-image-preview img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--radius); }
+.cart-backdrop {
+  position: fixed;
+  z-index: 40;
+  inset: 0;
+  background: rgba(3, 8, 12, .58);
+}
+.cart-drawer {
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  right: 0;
+  width: min(390px, 92vw);
+  height: 100vh;
+  padding: 20px;
+  overflow-y: auto;
+  background: var(--surface-deep);
+  border-left: 1px solid var(--border);
+  box-shadow: -18px 0 44px rgba(0, 0, 0, .42);
+  transform: translateX(105%);
+  transition: transform .22s ease;
+}
+.cart-drawer.cart-open { transform: translateX(0); }
+.cart-drawer-header, .cart-drawer-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.cart-drawer-header h2 { margin: 0; }
+.cart-drawer-header .button { margin: 0; }
+.cart-drawer-list { display: grid; gap: 12px; margin: 18px 0; }
+.cart-drawer-list .marketplace-card { border-radius: var(--radius); }
+.cart-drawer-footer { position: sticky; bottom: 0; margin: 16px -20px -20px; padding: 16px 20px 20px; background: var(--surface-deep); border-top: 1px solid var(--border); }
+.cart-drawer-footer .button { margin: 0; }
+.cart-total { margin: 0; }
 .plan-card { display: flex; flex-direction: column; align-items: flex-start; }
 .plan-card .button { margin-top: auto; }
 #current-plan { margin: 18px 0; }
@@ -491,6 +541,7 @@ label input, label select, label textarea { display: block; margin-top: 6px; fon
 @media (max-width: 600px) {
   nav { gap: 10px 14px; }
   .collection-toolbar, .market-tools, .encounter-toolbar { grid-template-columns: 1fr; }
+  .marketplace-heading { align-items: flex-start; }
   .marketplace-detail-layout { grid-template-columns: 1fr; }
   .map-layout { grid-template-columns: minmax(0, 1fr) minmax(150px, 42%); gap: 8px; }
   .map-surface { min-height: 300px; aspect-ratio: 4 / 3; }

@@ -8,11 +8,12 @@
     Creator: { collection: 100, listings: 10 },
     "Creator Pro": { collection: 10000, listings: Infinity }
   };
-  const MAX_LISTING_IMAGE_SIZE = 1024 * 1024;
+  const MAX_IMAGE_SIZE = 1024 * 1024;
   let storageUnavailable = false;
   let uploadedMapUrl = "";
   let listingPreviewUrl = "";
   let noticeTimer;
+  let pendingConfirmation = null;
 
   const storage = {
     get: function (key) {
@@ -60,6 +61,7 @@
       mapFileName: "",
       marketListings: [],
       marketInventory: {},
+      cart: [],
       purchases: [],
       purchasedDigitalListingIds: [],
       account: null,
@@ -76,7 +78,7 @@
   const state = Object.assign(defaultState(), storedState && typeof storedState === "object" ? storedState : {});
   [
     "collection", "combatants", "savedEncounters", "mapMarkers",
-    "marketListings", "purchases", "purchasedDigitalListingIds", "activity"
+    "marketListings", "cart", "purchases", "purchasedDigitalListingIds", "activity"
   ].forEach(function (key) {
     if (!Array.isArray(state[key])) state[key] = [];
   });
@@ -136,6 +138,16 @@
     notice.hidden = false;
     window.clearTimeout(noticeTimer);
     noticeTimer = window.setTimeout(function () { notice.hidden = true; }, 5000);
+  }
+
+  function requestConfirmation(message, onConfirm, confirmLabel, isDestructive) {
+    const dialog = document.getElementById("confirmation-dialog");
+    const acceptButton = document.getElementById("confirmation-accept");
+    document.getElementById("confirmation-message").textContent = message;
+    acceptButton.textContent = confirmLabel || "Confirm";
+    acceptButton.className = isDestructive ? "button secondary danger-button" : "button";
+    pendingConfirmation = onConfirm;
+    dialog.showModal();
   }
 
   function saveState(successMessage) {
@@ -294,6 +306,24 @@
     state.turnIndex = selectedIndex < 0 ? 0 : selectedIndex;
   }
 
+  function openCart() {
+    const panel = document.getElementById("marketplace-cart");
+    const backdrop = document.getElementById("cart-backdrop");
+    panel.classList.add("cart-open");
+    panel.setAttribute("aria-hidden", "false");
+    backdrop.hidden = false;
+  }
+
+  function closeCart() {
+    const panel = document.getElementById("marketplace-cart");
+    const backdrop = document.getElementById("cart-backdrop");
+    const toggle = document.getElementById("cart-toggle");
+    panel.classList.remove("cart-open");
+    panel.setAttribute("aria-hidden", "true");
+    backdrop.hidden = true;
+    if (toggle) toggle.setAttribute("aria-expanded", "false");
+  }
+
   function showView() {
     let requested = (window.location.hash || "#dashboard").slice(1);
     if (requested === "collection") {
@@ -315,22 +345,11 @@
       if (link.getAttribute("href") === "#" + current) link.setAttribute("aria-current", "page");
       else link.removeAttribute("aria-current");
     });
+    if (current !== "marketplace") closeCart();
     if (window.scrollTo) window.scrollTo(0, 0);
   }
 
-  function setFilterOptions(id, values, firstLabel) {
-    const select = document.getElementById(id);
-    select.replaceChildren();
-    select.appendChild(new Option(firstLabel || "All", "all"));
-    values.forEach(function (value) { select.appendChild(new Option(value, value)); });
-  }
-
-  function setupFilterOptions() {
-    ["creatureType", "size", "gameSystem", "creator"].forEach(function (field) {
-      const values = Array.from(new Set(MINIATURES.map(function (item) { return item[field]; }))).sort();
-      const id = "database-" + (field === "creatureType" ? "type" : field === "gameSystem" ? "system" : field);
-      setFilterOptions(id, values);
-    });
+  function setupCollectionOptions() {
     const sizeSelect = document.querySelector("#collection-form select[name='size']");
     SIZES.forEach(function (size) { sizeSelect.appendChild(new Option(size, size)); });
   }
@@ -338,8 +357,8 @@
   function renderDashboard() {
     const stats = document.getElementById("dashboard-stats");
     const cards = [
-      ["Miniatures in database", MINIATURES.length],
-      ["Miniatures collected", state.collection.reduce(function (total, entry) { return total + Number(entry.quantity || 0); }, 0)],
+      ["Unique miniatures collected", state.collection.length],
+      ["Miniatures owned", state.collection.reduce(function (total, entry) { return total + Number(entry.quantity || 0); }, 0)],
       ["Active combatants", state.combatants.length],
       ["Marketplace listings", MARKET_SAMPLE.length + state.marketListings.length]
     ];
@@ -354,83 +373,33 @@
     }));
   }
 
-  function addToCollection(miniature) {
-    if (!state.account) return notify("Sign in before adding miniatures to your collection.", "error");
-    const existing = state.collection.find(function (entry) { return entry.miniatureId === miniature.id; });
-    if (collectionCount() >= collectionLimit()) {
-      notify("Your " + currentPlan() + " plan has reached its " + collectionLimit() + "-miniature collection limit. Upgrade your plan for more space.", "error");
-      return;
-    }
-    if (existing && Number(existing.quantity) >= 999) {
-      notify("This miniature's quantity cannot exceed 999.", "error");
-      return;
-    }
-    if (existing) existing.quantity = Number(existing.quantity || 1) + 1;
-    else {
-      state.collection.push({
-        id: createId("collection"),
-        miniatureId: miniature.id,
-        name: miniature.name,
-        creatureType: miniature.creatureType,
-        size: miniature.size,
-        gameSystem: miniature.gameSystem,
-        creator: miniature.creator,
-        quantity: 1,
-        paintingStatus: "Unpainted",
-        notes: ""
-      });
-    }
-    recordActivity("Added " + miniature.name + " to your collection.");
-    saveState(existing ? "Collection quantity increased." : "Added " + miniature.name + " to your collection.");
-    renderAll();
-  }
-
-  function renderDatabase() {
-    const query = document.getElementById("database-search").value.trim().toLowerCase();
-    const filters = {
-      creatureType: document.getElementById("database-type").value,
-      size: document.getElementById("database-size").value,
-      gameSystem: document.getElementById("database-system").value,
-      creator: document.getElementById("database-creator").value
-    };
-    const matches = MINIATURES.filter(function (item) {
-      const searchText = [item.name, item.creatureType, item.size, item.gameSystem, item.creator, item.description].join(" ").toLowerCase();
-      return searchText.indexOf(query) !== -1 &&
-        Object.keys(filters).every(function (key) { return filters[key] === "all" || item[key] === filters[key]; });
-    });
-    document.getElementById("database-count").textContent = matches.length + " of " + MINIATURES.length + " miniatures";
-    const grid = document.getElementById("database-grid");
-    grid.replaceChildren.apply(grid, matches.map(function (item) {
-      const card = element("article", "card");
-      card.append(
-        element("span", "tag", item.creatureType + " · " + item.size),
-        element("h2", "", item.name),
-        element("p", "", item.description),
-        element("p", "muted small", item.gameSystem + " · " + item.creator)
-      );
-      const button = makeButton("Add to my collection", "button secondary", function () { addToCollection(item); });
-      if (!state.account) {
-        button.disabled = true;
-        button.title = "Sign in to add miniatures to your collection.";
-      }
-      if (collectionCount() >= collectionLimit()) {
-        button.disabled = true;
-        button.title = "Your current plan has reached its collection limit.";
-      }
-      card.appendChild(button);
-      return card;
-    }));
-    document.getElementById("database-empty").hidden = matches.length > 0;
-  }
-
   let editingCollectionId = "";
+  function setCollectionFormOpen(isOpen, isEditing) {
+    const form = document.getElementById("collection-form");
+    const toggle = document.getElementById("create-miniature-toggle");
+    if (isOpen) setMarketplaceImportOpen(false);
+    form.hidden = !isOpen;
+    toggle.hidden = Boolean(isEditing);
+    toggle.textContent = isOpen ? "Close miniature form" : "Create new Miniature";
+    toggle.setAttribute("aria-expanded", String(isOpen));
+  }
+
+  function setMarketplaceImportOpen(isOpen) {
+    const panel = document.getElementById("marketplace-import-panel");
+    const toggle = document.getElementById("marketplace-import-toggle");
+    panel.hidden = !isOpen;
+    toggle.textContent = isOpen ? "Close Marketplace Import" : "Import from Marketplace";
+    toggle.setAttribute("aria-expanded", String(isOpen));
+  }
+
   function resetCollectionForm() {
     editingCollectionId = "";
     const form = document.getElementById("collection-form");
     form.reset();
-    form.querySelector("h2").textContent = "Add a miniature";
-    form.querySelector("button[type='submit']").textContent = "Add to collection";
+    form.querySelector("h2").textContent = "Create miniature";
+    form.querySelector("button[type='submit']").textContent = "Create miniature";
     document.getElementById("cancel-collection-edit").hidden = true;
+    setCollectionFormOpen(false, false);
   }
 
   function editCollectionEntry(id) {
@@ -438,6 +407,8 @@
     if (!entry) return;
     editingCollectionId = id;
     const form = document.getElementById("collection-form");
+    setCollectionFormOpen(true, true);
+    form.elements.namedItem("image").value = "";
     ["name", "creatureType", "size", "gameSystem", "creator", "quantity", "paintingStatus", "notes"].forEach(function (field) {
       form.elements.namedItem(field).value = entry[field] || "";
     });
@@ -459,6 +430,11 @@
     const grid = document.getElementById("collection-grid");
     grid.replaceChildren.apply(grid, matches.map(function (entry) {
       const card = element("article", "card");
+      const image = element("img", "collection-image");
+      image.src = marketplaceImageSource(entry);
+      image.alt = entry.name + " miniature";
+      image.loading = "lazy";
+      card.appendChild(image);
       card.append(
         element("span", "tag", entry.creatureType + " · " + entry.size),
         element("h2", "", entry.name),
@@ -483,33 +459,58 @@
       const actions = element("div", "action-links");
       actions.appendChild(makeButton("Edit", "button secondary", function () { editCollectionEntry(entry.id); }));
       actions.appendChild(makeButton("Delete", "button secondary danger-button", function () {
-        if (!window.confirm("Are you sure you want to remove " + entry.name + " from your collection?")) return;
-        state.collection = state.collection.filter(function (item) { return item.id !== entry.id; });
-        state.combatants.forEach(function (combatant) {
-          if (combatant.collectionEntryId === entry.id) combatant.collectionEntryId = "";
-        });
-        if (editingCollectionId === entry.id) resetCollectionForm();
-        recordActivity("Removed " + entry.name + " from your collection.");
-        saveState("Removed " + entry.name + " from your collection.");
-        renderAll();
+        requestConfirmation("Are you sure you want to remove " + entry.name + " from your collection?", function () {
+          state.collection = state.collection.filter(function (item) { return item.id !== entry.id; });
+          state.combatants.forEach(function (combatant) {
+            if (combatant.collectionEntryId === entry.id) combatant.collectionEntryId = "";
+          });
+          if (editingCollectionId === entry.id) resetCollectionForm();
+          recordActivity("Removed " + entry.name + " from your collection.");
+          saveState("Removed " + entry.name + " from your collection.");
+          renderAll();
+        }, "Delete", true);
       }));
       card.append(quantity, actions);
       return card;
     }));
     const empty = document.getElementById("collection-empty");
     empty.textContent = state.account
-      ? "Your collection is empty. Add a miniature above or from the database."
+      ? "Your collection is empty. Add a miniature above."
       : "Sign in to view your personal collection.";
     empty.hidden = matches.length > 0;
+  }
+
+  function renderMarketplaceImport() {
+    const toggle = document.getElementById("marketplace-import-toggle");
+    const select = document.querySelector("#marketplace-import-form [name='purchaseId']");
+    const empty = document.getElementById("marketplace-import-empty");
+    const submit = document.querySelector("#marketplace-import-form button[type='submit']");
+    toggle.disabled = !state.account;
+    toggle.title = state.account ? "" : "Sign in to import marketplace purchases.";
+    if (!state.account) setMarketplaceImportOpen(false);
+
+    const availablePurchases = state.purchases.filter(function (purchase) {
+      return purchase.type === "Physical" || purchase.type === "Digital STL";
+    });
+    select.replaceChildren(new Option("Choose a purchase", ""));
+    availablePurchases.forEach(function (purchase) {
+      const importCount = state.collection.filter(function (entry) {
+        return entry.purchaseId === purchase.id;
+      }).length;
+      select.appendChild(new Option(
+        purchase.name + " · " + purchase.type + " · $" + Number(purchase.price).toFixed(2) +
+          " · Added to collection " + importCount + (importCount === 1 ? " time" : " times"),
+        purchase.id
+      ));
+    });
+    select.disabled = availablePurchases.length === 0;
+    empty.hidden = availablePurchases.length > 0;
+    submit.disabled = !state.account || availablePurchases.length === 0;
   }
 
   function renderMiniatureOptions() {
     document.querySelectorAll(".combatant-form select[name='miniature']").forEach(function (select) {
       select.replaceChildren(new Option("No miniature", ""));
-      const databaseGroup = document.createElement("optgroup");
-      databaseGroup.label = "Miniature database";
-      MINIATURES.forEach(function (item) { databaseGroup.appendChild(new Option(item.name, "db|" + item.id)); });
-      select.appendChild(databaseGroup);
       const collectionGroup = document.createElement("optgroup");
       collectionGroup.label = "My collection";
       state.collection.forEach(function (entry) {
@@ -615,19 +616,20 @@
         window.location.hash = "#battle-map";
       }));
       actions.appendChild(makeButton("Remove", "button secondary danger-button", function () {
-        if (!window.confirm("Are you sure you want to remove " + combatant.name + " and its map marker from the encounter?")) return;
-        const activeId = state.combatants[state.turnIndex] && state.combatants[state.turnIndex].id;
-        const removedIndex = state.combatants.findIndex(function (item) { return item.id === combatant.id; });
-        state.combatants = state.combatants.filter(function (item) { return item.id !== combatant.id; });
-        state.mapMarkers = state.mapMarkers.filter(function (marker) { return marker.combatantId !== combatant.id; });
-        if (activeId && activeId !== combatant.id) {
-          state.turnIndex = state.combatants.findIndex(function (item) { return item.id === activeId; });
-        } else {
-          state.turnIndex = Math.min(removedIndex, Math.max(0, state.combatants.length - 1));
-        }
-        state.selectedCombatantId = state.combatants[state.turnIndex] ? state.combatants[state.turnIndex].id : null;
-        saveState(combatant.name + " removed from the encounter.");
-        renderAll();
+        requestConfirmation("Are you sure you want to remove " + combatant.name + " and its map marker from the encounter?", function () {
+          const activeId = state.combatants[state.turnIndex] && state.combatants[state.turnIndex].id;
+          const removedIndex = state.combatants.findIndex(function (item) { return item.id === combatant.id; });
+          state.combatants = state.combatants.filter(function (item) { return item.id !== combatant.id; });
+          state.mapMarkers = state.mapMarkers.filter(function (marker) { return marker.combatantId !== combatant.id; });
+          if (activeId && activeId !== combatant.id) {
+            state.turnIndex = state.combatants.findIndex(function (item) { return item.id === activeId; });
+          } else {
+            state.turnIndex = Math.min(removedIndex, Math.max(0, state.combatants.length - 1));
+          }
+          state.selectedCombatantId = state.combatants[state.turnIndex] ? state.combatants[state.turnIndex].id : null;
+          saveState(combatant.name + " removed from the encounter.");
+          renderAll();
+        }, "Remove", true);
       }));
       card.append(top, health, actions);
       return card;
@@ -945,6 +947,33 @@
     quantityField.required = isPhysical;
   }
 
+  function findMarketplaceListing(listingId) {
+    return MARKET_SAMPLE.concat(state.marketListings).find(function (item) {
+      return item.id === listingId;
+    }) || null;
+  }
+
+  function addToCart(item) {
+    if (!state.account) return notify("Sign in to add marketplace listings to your cart.", "error");
+    if (state.account && (item.owner || item.seller) === state.account.name) {
+      return notify("You cannot purchase your own listing.", "error");
+    }
+    if (hasPurchasedDigitalListing(item)) {
+      return notify("You already purchased this digital STL.", "error");
+    }
+    if (item.type === "Physical" && getListingQuantity(item) < 1) {
+      return notify("This physical listing is out of stock.", "error");
+    }
+    if (state.cart.indexOf(item.id) !== -1) {
+      return notify(item.name + " is already in your cart.", "error");
+    }
+    state.cart.push(item.id);
+    saveState(item.name + " added to your cart.");
+    const dialog = document.getElementById("marketplace-detail-dialog");
+    if (dialog.open) dialog.close();
+    renderAll();
+  }
+
   function simulatePurchase(item) {
     if (state.account && (item.owner || item.seller) === state.account.name) {
       return notify("You cannot purchase your own listing.", "error");
@@ -1025,7 +1054,7 @@
     const actions = element("div", "action-links");
     const alreadyPurchased = hasPurchasedDigitalListing(item);
     const isOwnListing = Boolean(state.account && (item.owner || item.seller) === state.account.name);
-    const purchaseButton = makeButton(alreadyPurchased ? "Purchased" : "Simulate purchase", "button", function () { simulatePurchase(item); });
+    const purchaseButton = makeButton(alreadyPurchased ? "Purchased" : "Add To Cart 🛒", "button", function () { addToCart(item); });
     if (isOwnListing) {
       purchaseButton.disabled = true;
       purchaseButton.title = "You cannot purchase your own listing.";
@@ -1092,7 +1121,7 @@
       const ownListing = state.marketListings.find(function (listing) { return listing.id === item.id; });
       const isOwnListing = Boolean(state.account && (item.owner || item.seller) === state.account.name);
       const alreadyPurchased = hasPurchasedDigitalListing(item);
-      const purchaseButton = makeButton(alreadyPurchased ? "Purchased" : "Simulate purchase", "button", function () { simulatePurchase(item); });
+      const purchaseButton = makeButton(alreadyPurchased ? "Purchased" : "Add To Cart 🛒", "button", function () { addToCart(item); });
       if (isOwnListing) {
         purchaseButton.disabled = true;
         purchaseButton.title = "You cannot purchase your own listing.";
@@ -1106,11 +1135,12 @@
       if (ownListing && state.account) {
         actions.appendChild(makeButton("Edit", "button secondary", function () { editListing(item.id); }));
         actions.appendChild(makeButton("Remove", "button secondary danger-button", function () {
-          if (!window.confirm("Are you sure you want to remove your listing \"" + item.name + "\"?")) return;
-          state.marketListings = state.marketListings.filter(function (listing) { return listing.id !== item.id; });
-          recordActivity("Removed the marketplace listing \"" + item.name + "\".");
-          saveState("Listing removed.");
-          renderAll();
+          requestConfirmation("Are you sure you want to remove your listing \"" + item.name + "\"?", function () {
+            state.marketListings = state.marketListings.filter(function (listing) { return listing.id !== item.id; });
+            recordActivity("Removed the marketplace listing \"" + item.name + "\".");
+            saveState("Listing removed.");
+            renderAll();
+          }, "Remove", true);
         }));
       }
       card.appendChild(actions);
@@ -1131,10 +1161,20 @@
   function setListingFormOpen(isOpen, isEditing) {
     const form = document.getElementById("listing-form");
     const toggle = document.getElementById("create-listing-toggle");
+    if (isOpen) closePurchaseHistory();
     form.hidden = !isOpen;
     toggle.hidden = Boolean(isEditing);
     toggle.textContent = isOpen ? "Close listing form" : "Create listing";
     toggle.setAttribute("aria-expanded", String(isOpen));
+  }
+
+  function closePurchaseHistory() {
+    const panel = document.getElementById("purchase-history-panel");
+    const toggle = document.getElementById("purchase-history-toggle");
+    panel.hidden = true;
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.textContent = "Open purchases";
+    toggle.classList.remove("is-open");
   }
 
   function resetListingForm() {
@@ -1188,11 +1228,8 @@
     const panel = document.getElementById("purchase-history-panel");
     const list = document.getElementById("purchase-history-list");
     const empty = document.getElementById("purchase-history-empty");
-    const clearButton = document.getElementById("clear-purchase-history");
     toggle.disabled = !state.account;
     toggle.title = state.account ? "" : "Sign in to view your purchases.";
-    clearButton.disabled = !state.account ||
-      (state.purchases.length === 0 && state.purchasedDigitalListingIds.length === 0);
     list.replaceChildren();
     if (!state.account) {
       panel.hidden = true;
@@ -1249,6 +1286,52 @@
     const hasPurchases = state.purchases.length > 0;
     list.hidden = !hasPurchases;
     empty.hidden = hasPurchases;
+  }
+
+  function renderCart() {
+    const toggle = document.getElementById("cart-toggle");
+    const panel = document.getElementById("marketplace-cart");
+    const list = document.getElementById("marketplace-cart-list");
+    const empty = document.getElementById("marketplace-cart-empty");
+    const completeButton = document.getElementById("complete-cart-purchase");
+    const total = document.getElementById("marketplace-cart-total");
+    const validCartIds = state.cart.filter(function (listingId) {
+      return Boolean(findMarketplaceListing(listingId));
+    });
+    if (validCartIds.length !== state.cart.length) state.cart = validCartIds;
+    toggle.textContent = "🛒 Cart (" + state.cart.length + ")";
+    toggle.disabled = !state.account;
+    toggle.title = state.account ? "" : "Sign in to view your cart.";
+    completeButton.disabled = !state.account || state.cart.length === 0;
+    list.replaceChildren();
+    state.cart.forEach(function (listingId) {
+      const item = findMarketplaceListing(listingId);
+      if (!item) return;
+      const row = element("article", "card marketplace-card");
+      const content = element("div", "marketplace-card-content");
+      content.append(
+        element("span", "tag", item.type),
+        element("h2", "", item.name),
+        element("p", "price marketplace-price", "$" + Number(item.price).toFixed(2)),
+        element("p", "muted small", "Quantity: 1")
+      );
+      const actions = element("div", "action-links");
+      actions.appendChild(makeButton("Remove", "button secondary danger-button", function () {
+        state.cart = state.cart.filter(function (id) { return id !== listingId; });
+        saveState(item.name + " removed from your cart.");
+        renderAll();
+      }));
+      content.appendChild(actions);
+      row.appendChild(content);
+      list.appendChild(row);
+    });
+    const cartTotal = state.cart.reduce(function (sum, listingId) {
+      const item = findMarketplaceListing(listingId);
+      return sum + (item ? Number(item.price) : 0);
+    }, 0);
+    total.textContent = "$" + cartTotal.toFixed(2);
+    list.hidden = state.cart.length === 0;
+    empty.hidden = state.cart.length > 0;
   }
 
   function renderMembership() {
@@ -1358,19 +1441,30 @@
 
   function renderAll() {
     renderDashboard();
-    renderDatabase();
     renderCollection();
+    renderMarketplaceImport();
     renderCombatants();
     renderMap();
     renderMarketplace();
+    renderCart();
     renderPurchaseHistory();
     renderMembership();
     renderAccount();
   }
 
-  document.getElementById("database-search").addEventListener("input", renderDatabase);
-  ["database-type", "database-size", "database-system", "database-creator"].forEach(function (id) {
-    document.getElementById(id).addEventListener("change", renderDatabase);
+  document.getElementById("create-miniature-toggle").addEventListener("click", function () {
+    const opening = document.getElementById("collection-form").hidden;
+    setCollectionFormOpen(opening, false);
+    if (opening) document.querySelector("#collection-form [name='name']").focus();
+  });
+  document.getElementById("marketplace-import-toggle").addEventListener("click", function () {
+    const opening = document.getElementById("marketplace-import-panel").hidden;
+    if (opening) setCollectionFormOpen(false, false);
+    setMarketplaceImportOpen(opening);
+  });
+  document.getElementById("cancel-marketplace-import").addEventListener("click", function () {
+    document.getElementById("marketplace-import-form").reset();
+    setMarketplaceImportOpen(false);
   });
   document.getElementById("collection-search").addEventListener("input", renderCollection);
   document.getElementById("collection-form").addEventListener("submit", function (event) {
@@ -1380,32 +1474,123 @@
     const values = Object.fromEntries(new FormData(form).entries());
     const name = values.name.trim();
     const quantity = Number(values.quantity);
+    const imageFile = form.elements.namedItem("image").files[0];
+    if (imageFile) {
+      const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+      if (allowedTypes.indexOf(imageFile.type.toLowerCase()) === -1) return notify("Choose a PNG, JPEG, WebP, or GIF image.", "error");
+      if (imageFile.size > MAX_IMAGE_SIZE) return notify("Miniature images must be 1 MB or smaller.", "error");
+    }
     if (!name || !values.creatureType.trim() || !values.gameSystem.trim()) return notify("Name, creature type, and game system are required.", "error");
     if (!Number.isInteger(quantity) || quantity < 1 || quantity > 999) return notify("Quantity must be a whole number between 1 and 999.", "error");
-    if (editingCollectionId) {
-      const entry = getCollectionEntry(editingCollectionId);
-      if (!entry) return notify("That collection item no longer exists.", "error");
-      if (collectionCount() - Number(entry.quantity || 0) + quantity > collectionLimit()) {
-        return notify("That quantity would exceed your " + currentPlan() + " collection limit. Upgrade your plan or lower the quantity.", "error");
-      }
-      ["name", "creatureType", "size", "gameSystem", "creator", "paintingStatus", "notes"].forEach(function (key) { entry[key] = String(values[key] || "").trim(); });
-      entry.quantity = quantity;
-      recordActivity("Updated " + entry.name + " in your collection.");
-      resetCollectionForm();
-      saveState("Collection item updated.");
-    } else {
-      if (collectionCount() + quantity > collectionLimit()) return notify("Adding that quantity would exceed your " + currentPlan() + " collection limit. Upgrade your plan or lower the quantity.", "error");
-      state.collection.push({
-        id: createId("collection"), miniatureId: "", name: name,
-        creatureType: values.creatureType.trim(), size: values.size,
-        gameSystem: values.gameSystem.trim(), creator: values.creator.trim(),
-        quantity: quantity, paintingStatus: values.paintingStatus, notes: values.notes.trim()
-      });
-      recordActivity("Added " + name + " to your collection.");
-      form.reset();
-      saveState("Added " + name + " to your collection.");
+    const entry = editingCollectionId ? getCollectionEntry(editingCollectionId) : null;
+    if (editingCollectionId && !entry) return notify("That collection item no longer exists.", "error");
+    if (entry && collectionCount() - Number(entry.quantity || 0) + quantity > collectionLimit()) {
+      return notify("That quantity would exceed your " + currentPlan() + " collection limit. Upgrade your plan or lower the quantity.", "error");
     }
-    renderAll();
+    if (!entry && collectionCount() + quantity > collectionLimit()) {
+      return notify("Adding that quantity would exceed your " + currentPlan() + " collection limit. Upgrade your plan or lower the quantity.", "error");
+    }
+
+    const saveCollectionEntry = function (imageData) {
+      if (entry) {
+        ["name", "creatureType", "size", "gameSystem", "creator", "paintingStatus", "notes"].forEach(function (key) { entry[key] = String(values[key] || "").trim(); });
+        entry.quantity = quantity;
+        if (imageData) entry.imageData = imageData;
+        recordActivity("Updated " + entry.name + " in your collection.");
+        resetCollectionForm();
+        saveState("Collection item updated.");
+      } else {
+        state.collection.push({
+          id: createId("collection"), miniatureId: "", name: name,
+          creatureType: values.creatureType.trim(), size: values.size,
+          gameSystem: values.gameSystem.trim(), creator: values.creator.trim(),
+          quantity: quantity, paintingStatus: values.paintingStatus, notes: values.notes.trim(),
+          imageData: imageData || ""
+        });
+        recordActivity("Added " + name + " to your collection.");
+        form.reset();
+        setCollectionFormOpen(false, false);
+        saveState("Added " + name + " to your collection.");
+      }
+      renderAll();
+    };
+    if (imageFile) {
+      const submit = form.querySelector("button[type='submit']");
+      const cancel = document.getElementById("cancel-collection-edit");
+      submit.disabled = true;
+      cancel.disabled = true;
+      readListingImage(imageFile).then(function (imageData) {
+        submit.disabled = false;
+        cancel.disabled = false;
+        saveCollectionEntry(imageData);
+      }, function () {
+        submit.disabled = false;
+        cancel.disabled = false;
+        notify("Could not read the miniature image. Choose a valid image and try again.", "error");
+      });
+    } else {
+      saveCollectionEntry("");
+    }
+  });
+  document.getElementById("marketplace-import-form").addEventListener("submit", function (event) {
+    event.preventDefault();
+    if (!state.account) return notify("Sign in before importing marketplace purchases.", "error");
+    const form = event.currentTarget;
+    const values = Object.fromEntries(new FormData(form).entries());
+    const purchase = state.purchases.find(function (item) {
+      return item.id === values.purchaseId && (item.type === "Physical" || item.type === "Digital STL");
+    });
+    if (!purchase) return notify("Choose an available miniature purchase to import.", "error");
+    if (collectionCount() >= collectionLimit()) {
+      return notify("Your " + currentPlan() + " plan has reached its collection limit. Upgrade your plan for more space.", "error");
+    }
+
+    const imageFile = form.elements.namedItem("image").files[0];
+    if (imageFile) {
+      const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+      if (allowedTypes.indexOf(imageFile.type.toLowerCase()) === -1) return notify("Choose a PNG, JPEG, WebP, or GIF image.", "error");
+      if (imageFile.size > MAX_IMAGE_SIZE) return notify("Miniature images must be 1 MB or smaller.", "error");
+    }
+
+    const saveImportedPurchase = function (imageData) {
+      state.collection.push({
+        id: createId("collection"),
+        purchaseId: purchase.id,
+        miniatureId: "",
+        name: purchase.name,
+        creatureType: "Miniature",
+        size: "Medium",
+        gameSystem: "Marketplace",
+        creator: purchase.seller || "Marketplace",
+        quantity: 1,
+        paintingStatus: values.paintingStatus,
+        notes: values.notes.trim(),
+        imageData: imageData || ""
+      });
+      recordActivity("Imported " + purchase.name + " from marketplace purchases.");
+      form.reset();
+      setMarketplaceImportOpen(false);
+      saveState("Marketplace purchase added to your collection.");
+      renderAll();
+    };
+
+    if (imageFile) {
+      const submit = form.querySelector("button[type='submit']");
+      const cancel = document.getElementById("cancel-marketplace-import");
+      submit.disabled = true;
+      cancel.disabled = true;
+      readListingImage(imageFile).then(function (imageData) {
+        submit.disabled = false;
+        cancel.disabled = false;
+        saveImportedPurchase(imageData);
+      }, function () {
+        submit.disabled = false;
+        cancel.disabled = false;
+        notify("Could not read the miniature image. Choose a valid image and try again.", "error");
+      });
+    } else {
+      saveImportedPurchase("");
+    }
   });
   document.getElementById("cancel-collection-edit").addEventListener("click", resetCollectionForm);
 
@@ -1417,7 +1602,6 @@
     const selected = String(values.miniature || "").split("|");
     let miniature = null;
     let collectionEntryId = "";
-    if (selected[0] === "db") miniature = getMiniature(selected[1]);
     if (selected[0] === "collection") {
       const entry = getCollectionEntry(selected[1]);
       if (entry) {
@@ -1442,7 +1626,7 @@
       id: createId("combatant"),
       name: name,
       kind: kind,
-      miniatureId: miniature && miniature.miniatureId ? miniature.miniatureId : miniature && miniature.id && getMiniature(miniature.id) ? miniature.id : "",
+      miniatureId: miniature && miniature.miniatureId ? miniature.miniatureId : "",
       collectionEntryId: collectionEntryId,
       miniatureSnapshot: miniature ? {
         name: miniature.name, creatureType: miniature.creatureType, size: miniature.size,
@@ -1641,18 +1825,46 @@
     if (!state.account) return notify("Sign in to view your purchases.", "error");
     const panel = document.getElementById("purchase-history-panel");
     panel.hidden = !panel.hidden;
-    this.setAttribute("aria-expanded", String(!panel.hidden));
+    const isOpen = !panel.hidden;
+    if (isOpen) setListingFormOpen(false, false);
+    this.setAttribute("aria-expanded", String(isOpen));
+    this.textContent = isOpen ? "Close purchases" : "Open purchases";
+    this.classList.toggle("is-open", isOpen);
   });
-  document.getElementById("clear-purchase-history").addEventListener("click", function () {
-    if (!state.account) return notify("Sign in to clear your purchase history.", "error");
-    if (!state.purchases.length && !state.purchasedDigitalListingIds.length) return;
-    if (!window.confirm("Are you sure you want to clear your purchase history and digital purchase status? Previously purchased digital listings will be available to purchase again.")) return;
-    if (findBattlemapListing(state.mapSource)) state.mapSource = "grasslands";
-    state.purchases = [];
-    state.purchasedDigitalListingIds = [];
-    recordActivity("Cleared the account purchase history.");
-    saveState("Purchase history and digital purchase status cleared.");
-    renderAll();
+  document.getElementById("cart-toggle").addEventListener("click", function () {
+    if (!state.account) return notify("Sign in to view your cart.", "error");
+    openCart();
+    this.setAttribute("aria-expanded", "true");
+  });
+  document.getElementById("cart-close").addEventListener("click", closeCart);
+  document.getElementById("cart-backdrop").addEventListener("click", closeCart);
+  const confirmationDialog = document.getElementById("confirmation-dialog");
+  document.getElementById("confirmation-cancel").addEventListener("click", function () {
+    pendingConfirmation = null;
+    confirmationDialog.close();
+  });
+  document.getElementById("confirmation-accept").addEventListener("click", function () {
+    const onConfirm = pendingConfirmation;
+    pendingConfirmation = null;
+    confirmationDialog.close();
+    if (onConfirm) onConfirm();
+  });
+  confirmationDialog.addEventListener("cancel", function () {
+    pendingConfirmation = null;
+  });
+  document.getElementById("complete-cart-purchase").addEventListener("click", function () {
+    if (!state.account) return notify("Sign in to complete your purchase.", "error");
+    if (state.cart.length === 0) return;
+    requestConfirmation("Are you sure you'd like to complete this purchase?", function () {
+      const cartIds = state.cart.slice();
+      state.cart = [];
+      cartIds.forEach(function (listingId) {
+        const item = findMarketplaceListing(listingId);
+        if (item) simulatePurchase(item);
+      });
+      saveState("Cart purchase complete. No payment was processed.");
+      renderAll();
+    }, "Complete purchase", false);
   });
   document.querySelector("#listing-form [name='image']").addEventListener("change", function (event) {
     const file = event.currentTarget.files && event.currentTarget.files[0];
@@ -1663,7 +1875,7 @@
       event.currentTarget.value = "";
       return notify("Choose a PNG, JPEG, WebP, or GIF image.", "error");
     }
-    if (file.size > MAX_LISTING_IMAGE_SIZE) {
+    if (file.size > MAX_IMAGE_SIZE) {
       event.currentTarget.value = "";
       return notify("Listing images must be 1 MB or smaller.", "error");
     }
@@ -1690,7 +1902,7 @@
     if (imageFile) {
       const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
       if (allowedTypes.indexOf(imageFile.type.toLowerCase()) === -1) return notify("Choose a PNG, JPEG, WebP, or GIF image.", "error");
-      if (imageFile.size > MAX_LISTING_IMAGE_SIZE) return notify("Listing images must be 1 MB or smaller.", "error");
+      if (imageFile.size > MAX_IMAGE_SIZE) return notify("Listing images must be 1 MB or smaller.", "error");
     }
     if (!id && state.marketListings.length >= listingLimit()) {
       return notify("Your " + currentPlan() + " plan has reached its active listing limit. Upgrade for more listings.", "error");
@@ -1749,7 +1961,7 @@
   document.getElementById("cancel-listing-edit").addEventListener("click", resetListingForm);
 
   window.addEventListener("hashchange", showView);
-  setupFilterOptions();
+  setupCollectionOptions();
   if (storageUnavailable) notify("Saved browser data could not be read. You can continue, but changes may not persist.", "error");
   renderAll();
   showView();

@@ -98,7 +98,7 @@ Copy this block for each session.
 - **Goal for this session:** complete Marketplace design
 - **Key prompts we gave Copilot** (paste the important ones):
   1. make the marketplace with similar ui as facebook marketplace, for any listings generate sample images and create an option to upload image with listing creation
-  2. Dont allow  user profile to purchase its own listings, give a quantity amount for physical and when o qty left remove listing from market place
+  2. Dont allow  user profile to purchase its own listings, give a quantity amount for physical and when 0 qty left remove listing from market place
   3. make create listing button that opens up create listing menu in marketplace
   4. Create a button beside the create listing called "Purchases" which shows what purchases the account have purchased 
   5. Purchases tab should show to listing you purchased similar to the listings, make buton save size and color as creat listing 
@@ -109,6 +109,32 @@ Copy this block for each session.
 - **What worked:** market place is now functional, battlemaps now in marketplace, populated marketplace.
 - **What broke, and how we fixed it:** N/A
 - **Committed?** yes / no — commit message: yes - Enhance marketplace functionality and UI: added battlemap listings, improved listing creation with image upload, and updated marketplace descriptions. Introduced new SVG battlemap assets for desert and arena themes.
+---
+### Session — [Novemeber 25th, 2026] — driver: [Noah]
+
+- **Goal for this session:** finish marketplace and database
+- **Key prompts we gave Copilot** (paste the important ones):
+  1. Remove delete account purchase history button
+  2. create a cart for marketplace listings and give a prompt saying "are you sure youd like to complete purchase"
+  3.make cart open a menu on side of site and give a running price tally, and make all purchase buttons into add to cart buttons
+  4. when purchase tab is open make button gold and change text to "close purchases" until its closed, closed button should read open purchases
+  5.stop purchase and create listing tabs from opening at same time, only one should open at once
+  6.remove generic database of creatures, only collected ones are needed for this page.
+  7.to the right of that buton i want a button "Import from Marketplace" type button where i can import purchases, give it an option to upload new photo, notes, and painted status
+  8.allow same purchase to be done multiple times, but add a counter of sdded to collection n number of times
+- **What worked:** 
+- **What broke, and how we fixed it:** N/A
+- **Committed?** yes / no — commit message: yes - Enhance user interface and functionality for Marketplace and Collection features: renamed sections, improved layout, added cart functionality, and implemented confirmation dialogs. Updated styles for better responsiveness and visual appeal.
+---
+### Session — [Novemeber 25th, 2026] — driver: [Noah]
+
+- **Goal for this session:** 
+- **Key prompts we gave Copilot** (paste the important ones):
+  1. N/A
+  2. N/A
+- **What worked:** 
+- **What broke, and how we fixed it:** N/A
+- **Committed?** yes / no — commit message: 
 ---
 ## Things that broke (running list)
 

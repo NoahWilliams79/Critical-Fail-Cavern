@@ -12,7 +12,7 @@
     <a class="brand" href="#dashboard" id="brand-name">Critical Fail Cavern</a>
     <nav aria-label="Main navigation">
       <a href="#dashboard" data-nav>Dashboard</a>
-      <a href="#database" data-nav>Database &amp; Collection</a>
+      <a href="#database" data-nav>My Collection</a>
       <a href="#initiative" data-nav>Initiative</a>
       <a href="#battle-map" data-nav>Battle map</a>
       <a href="#marketplace" data-nav>Marketplace</a>
@@ -29,7 +29,7 @@
         <p class="eyebrow">Your tabletop, all in one place</p>
         <h1 id="tagline">One cavern for every tabletop adventure.</h1>
         <p class="lead" id="pitch">Discover miniatures, organize your collection, run encounters, and find your next tabletop treasure.</p>
-        <a class="button" href="#database">Explore the miniature database</a>
+        <a class="button" href="#database">View my collection</a>
       </div>
       <div class="stats-grid" id="dashboard-stats"></div>
       <div class="dashboard-grid">
@@ -39,9 +39,9 @@
         </article>
         <article class="card">
           <h2>Pick up where you left off</h2>
-          <p>Browse miniatures, prepare an encounter, and place its combatants on your map.</p>
+          <p>Manage your collection, prepare an encounter, and place its combatants on your map.</p>
           <div class="action-links">
-            <a class="button secondary" href="#database">My database &amp; collection</a>
+            <a class="button secondary" href="#database">My collection</a>
             <a class="button secondary" href="#initiative">Open initiative tracker</a>
             <a class="button secondary" href="#battle-map">Open battle map</a>
           </div>
@@ -50,29 +50,36 @@
     </section>
 
     <section id="database" data-view hidden>
-      <h1>Miniature database &amp; collection</h1>
-      <p class="muted">Search fictional miniatures from independent, imaginary creators. Add one to your collection to use it in an encounter.</p>
-      <div class="action-links" aria-label="Database page sections">
-        <a class="button secondary" href="#database-browser">Browse database</a>
-        <a class="button secondary" href="#my-collection">My collection</a>
-      </div>
-      <h2 id="database-browser">Browse database</h2>
-      <div class="filter-grid">
-        <label class="search">Search miniatures
-          <input type="search" id="database-search" placeholder="Name, type, creator…">
-        </label>
-        <label>Creature type<select id="database-type"></select></label>
-        <label>Size<select id="database-size"></select></label>
-        <label>Game system<select id="database-system"></select></label>
-        <label>Creator<select id="database-creator"></select></label>
-      </div>
-      <p class="muted" id="database-count"></p>
-      <div class="grid" id="database-grid"></div>
-      <p class="empty" id="database-empty" hidden>No miniatures match those filters.</p>
-      <h2 id="my-collection">My collection</h2>
+      <h1>My Collection</h1>
+      <p class="muted">Manage the miniatures you own and use them in your encounters.</p>
+      <h2 id="my-collection">Your miniatures</h2>
       <p class="muted" id="collection-capacity"></p>
-      <form id="collection-form" class="card form-card">
-        <h2>Add a miniature</h2>
+      <div class="action-links">
+        <button type="button" class="button" id="create-miniature-toggle" aria-expanded="false" aria-controls="collection-form">Create new Miniature</button>
+        <button type="button" class="button secondary" id="marketplace-import-toggle" aria-expanded="false" aria-controls="marketplace-import-panel">Import from Marketplace</button>
+      </div>
+      <section id="marketplace-import-panel" class="card form-card" hidden>
+        <h2>Import a marketplace purchase</h2>
+        <p id="marketplace-import-empty" class="muted" hidden>No marketplace miniature purchases are available to import.</p>
+        <form id="marketplace-import-form">
+          <div class="form-grid">
+            <label class="wide">Purchase<select name="purchaseId" required></select></label>
+            <label class="wide">Miniature photo<input name="image" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
+              <span class="muted small">Optional. PNG, JPEG, WebP, or GIF up to 1 MB. A generic image is used if no photo is uploaded.</span>
+            </label>
+            <label>Painting status<select name="paintingStatus" required>
+              <option>Unpainted</option><option>In progress</option><option>Painted</option>
+            </select></label>
+            <label class="wide">Notes<textarea name="notes" rows="2" maxlength="500" placeholder="Storage, details, or plans"></textarea></label>
+          </div>
+          <div class="action-links">
+            <button class="button" type="submit">Import to collection</button>
+            <button class="button secondary" type="button" id="cancel-marketplace-import">Cancel</button>
+          </div>
+        </form>
+      </section>
+      <form id="collection-form" class="card form-card" hidden>
+        <h2>Create miniature</h2>
         <div class="form-grid">
           <label>Name<input name="name" required maxlength="80" placeholder="e.g. Mossback Sentinel"></label>
           <label>Creature type<input name="creatureType" required maxlength="50" placeholder="Construct"></label>
@@ -80,13 +87,16 @@
           <label>Game system<input name="gameSystem" required maxlength="60" placeholder="Cavern Quest"></label>
           <label>Creator<input name="creator" maxlength="60" placeholder="Your own design"></label>
           <label>Quantity<input name="quantity" type="number" min="1" max="999" value="1" required></label>
+          <label class="wide">Miniature image<input name="image" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
+            <span class="muted small">Optional. PNG, JPEG, WebP, or GIF up to 1 MB. Miniatures without an uploaded image use a generic image.</span>
+          </label>
           <label>Painting status<select name="paintingStatus" required>
             <option>Unpainted</option><option>In progress</option><option>Painted</option>
           </select></label>
           <label class="wide">Notes<textarea name="notes" rows="2" maxlength="500" placeholder="Storage, details, or plans"></textarea></label>
         </div>
         <div class="action-links">
-          <button class="button" type="submit">Add to collection</button>
+          <button class="button" type="submit">Create miniature</button>
           <button class="button secondary" type="button" id="cancel-collection-edit" hidden>Cancel edit</button>
         </div>
       </form>
@@ -96,7 +106,7 @@
         </label>
       </div>
       <div class="grid" id="collection-grid"></div>
-      <p class="empty" id="collection-empty" hidden>Your collection is empty. Add a miniature above or from the database.</p>
+      <p class="empty" id="collection-empty" hidden>Your collection is empty. Add a miniature above.</p>
     </section>
 
     <section id="initiative" data-view hidden>
@@ -202,7 +212,10 @@
     </section>
 
     <section id="marketplace" data-view hidden>
-      <h1>Marketplace</h1>
+      <div class="marketplace-heading">
+        <h1>Marketplace</h1>
+        <button type="button" class="button secondary" id="cart-toggle" aria-expanded="false" aria-controls="marketplace-cart">🛒 Cart (0)</button>
+      </div>
       <p class="muted">Browse simulated physical miniatures, digital STL files, and battle maps. Listings include generated artwork or an image uploaded by the seller. Purchases are demonstrations only; no payment is collected.</p>
       <div class="market-tools">
         <label class="search">Search listings<input type="search" id="market-search" placeholder="Product, seller, description…"></label>
@@ -210,13 +223,10 @@
       </div>
       <div class="action-links">
         <button type="button" class="button" id="create-listing-toggle" aria-expanded="false" aria-controls="listing-form">Create listing</button>
-        <button type="button" class="button" id="purchase-history-toggle" aria-expanded="false" aria-controls="purchase-history-panel">Purchases</button>
+        <button type="button" class="button" id="purchase-history-toggle" aria-expanded="false" aria-controls="purchase-history-panel">Open purchases</button>
       </div>
       <section id="purchase-history-panel" class="card" aria-labelledby="purchase-history-title" hidden>
         <h2 id="purchase-history-title">Your purchases</h2>
-        <div class="action-links">
-          <button type="button" class="button secondary danger-button" id="clear-purchase-history" disabled>Clear history</button>
-        </div>
         <div id="purchase-history-list" class="grid marketplace-grid"></div>
         <p id="purchase-history-empty" class="muted" hidden>No purchases yet.</p>
       </section>
@@ -248,12 +258,35 @@
       <p class="empty" id="market-empty" hidden>No listings match your search.</p>
     </section>
 
+    <div id="cart-backdrop" class="cart-backdrop" hidden></div>
+    <aside id="marketplace-cart" class="cart-drawer" aria-labelledby="marketplace-cart-title" aria-hidden="true">
+      <div class="cart-drawer-header">
+        <h2 id="marketplace-cart-title">Your cart</h2>
+        <button type="button" class="button secondary" id="cart-close" aria-label="Close cart">Close</button>
+      </div>
+      <div id="marketplace-cart-list" class="cart-drawer-list"></div>
+      <p id="marketplace-cart-empty" class="muted">Your cart is empty.</p>
+      <div class="cart-drawer-footer">
+        <p class="cart-total">Total: <strong id="marketplace-cart-total">$0.00</strong></p>
+        <button type="button" class="button" id="complete-cart-purchase" disabled>Complete purchase</button>
+      </div>
+    </aside>
+
     <dialog id="marketplace-detail-dialog" class="marketplace-detail-dialog" aria-labelledby="marketplace-detail-title">
       <div class="marketplace-detail-header">
         <h2 id="marketplace-detail-title">Listing details</h2>
         <button type="button" class="button secondary" id="marketplace-detail-close">Close</button>
       </div>
       <div id="marketplace-detail-content"></div>
+    </dialog>
+
+    <dialog id="confirmation-dialog" class="confirmation-dialog" aria-labelledby="confirmation-title" aria-describedby="confirmation-message">
+      <h2 id="confirmation-title">Please confirm</h2>
+      <p id="confirmation-message"></p>
+      <div class="action-links confirmation-actions">
+        <button type="button" class="button secondary" id="confirmation-cancel">Cancel</button>
+        <button type="button" class="button" id="confirmation-accept">Confirm</button>
+      </div>
     </dialog>
 
     <section id="membership" data-view hidden>
