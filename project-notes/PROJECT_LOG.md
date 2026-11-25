@@ -154,6 +154,17 @@ Copy this block for each session.
 - **What worked:** 
 - **What broke, and how we fixed it:** N/A
 - **Committed?** yes / no — commit message: yes - Enhance combat and collection management: improve turn index validation, add collection quantity checks, implement listing lock functionality, and refine UI for locked entries in marketplace and collection views.
+
+---
+### Session — [Novemeber 16th, 2026] — driver: [Noah]
+
+- **Goal for this session:** last minute checks/fixes before link goes live.
+- **Key prompts we gave Copilot** (paste the important ones):
+  1. the red marker in inititive tracker should only be applied to enemy markers
+- **What worked:** 
+- **What broke, and how we fixed it:** N/A
+- **Committed?** yes / no — commit message: yes - Update marker styles for combatants: change player marker to enemy marker in UI and adjust corresponding CSS classes for better clarity in initiative tracking.
+
 ---
 ## Things that broke (running list)
 

@@ -874,7 +874,7 @@
       if (!combatant) return;
       markerNumber += 1;
       const button = element("button", "map-marker" +
-        (combatant.kind === "Player" ? " player-marker" : "") +
+        (combatant.enemy ? " enemy-marker" : "") +
         (combatant.id === state.selectedCombatantId ? " marker-selected" : ""));
       button.type = "button";
       button.style.left = Math.max(0, Math.min(100, Number(marker.x))) + "%";
@@ -883,7 +883,7 @@
       button.appendChild(element("span", "map-marker-token", String(markerNumber)));
       const legendEntry = element("li", "map-legend-entry" + (combatant.id === state.selectedCombatantId ? " legend-selected" : ""));
       const legendToken = element("span", "map-legend-token" +
-        (combatant.kind === "Player" ? " player-marker" : ""), String(markerNumber));
+        (combatant.enemy ? " enemy-marker" : ""), String(markerNumber));
       legendToken.setAttribute("aria-hidden", "true");
       legendEntry.append(legendToken, element("span", "", combatant.name + " (" + combatant.kind + ") · Initiative " + combatant.initiative + " · AC " + combatant.ac + " · " + combatant.hp + "/" + combatant.maxHp + " HP"));
       legendList.appendChild(legendEntry);
