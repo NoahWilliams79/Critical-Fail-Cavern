@@ -935,7 +935,7 @@
       });
       layer.appendChild(button);
     });
-    legend.hidden = markerNumber === 0;
+    legend.hidden = markerNumber === 0 && document.fullscreenElement !== mapLayout;
     const selected = getCombatant(state.selectedCombatantId);
     const marker = state.mapMarkers.find(function (item) { return selected && item.combatantId === selected.id; });
     mapMessage.textContent = selected
@@ -1055,7 +1055,7 @@
       return notify(item.name + " is already in your cart.", "error");
     }
     state.cart.push(item.id);
-    saveState(item.name + " added to your cart.");
+    saveState("Added to Cart: " + item.name);
     const dialog = document.getElementById("marketplace-detail-dialog");
     if (dialog.open) dialog.close();
     renderAll();
@@ -1141,7 +1141,8 @@
     const listingLocked = isListingLocked(item);
     const isOwnListing = Boolean(state.account && (item.owner || item.seller) === state.account.name);
     const soldOut = item.type === "Physical" && getListingQuantity(item) < 1;
-    const purchaseButton = makeButton(soldOut ? "Sold Out" : (listingLocked ? "Locked" : (alreadyPurchased ? "Purchased" : "Add To Cart 🛒")), "button", function () { addToCart(item); });
+    const inCart = state.cart.indexOf(item.id) !== -1;
+    const purchaseButton = makeButton(soldOut ? "Sold Out" : (listingLocked ? "Locked" : (alreadyPurchased ? "Purchased" : (inCart ? "In Cart ✓" : "Add To Cart 🛒"))), "button" + (inCart ? " is-in-cart" : ""), function () { addToCart(item); });
     if (soldOut) {
       purchaseButton.disabled = true;
       purchaseButton.title = "Sold out.";
@@ -1220,7 +1221,8 @@
       const isOwnListing = Boolean(state.account && (item.owner || item.seller) === state.account.name);
       const alreadyPurchased = hasPurchasedDigitalListing(item);
       const soldOut = item.type === "Physical" && getListingQuantity(item) < 1;
-      const purchaseButton = makeButton(soldOut ? "Sold Out" : (listingLocked ? "Locked" : (alreadyPurchased ? "Purchased" : "Add To Cart 🛒")), "button", function () { addToCart(item); });
+      const inCart = state.cart.indexOf(item.id) !== -1;
+      const purchaseButton = makeButton(soldOut ? "Sold Out" : (listingLocked ? "Locked" : (alreadyPurchased ? "Purchased" : (inCart ? "In Cart ✓" : "Add To Cart 🛒"))), "button" + (inCart ? " is-in-cart" : ""), function () { addToCart(item); });
       if (soldOut) {
         purchaseButton.disabled = true;
         purchaseButton.title = "Sold out.";
@@ -1923,7 +1925,18 @@
     fullscreenButton.setAttribute("aria-pressed", isFullscreen ? "true" : "false");
     fullscreenButton.textContent = isFullscreen ? "Full screen active" : "Full screen";
     document.getElementById("fullscreen-exit").hidden = !isFullscreen;
-    renderFullscreenTurnControl();
+    if (!isFullscreen) {
+      mapLayout.classList.remove("mobile-legend-open");
+      document.getElementById("fullscreen-legend-toggle").setAttribute("aria-expanded", "false");
+      document.getElementById("fullscreen-legend-toggle").setAttribute("aria-label", "Open map legend");
+    }
+    renderMap();
+  });
+  document.getElementById("fullscreen-legend-toggle").addEventListener("click", function () {
+    const mapLayout = document.getElementById("map-layout");
+    const isOpen = mapLayout.classList.toggle("mobile-legend-open");
+    this.setAttribute("aria-expanded", String(isOpen));
+    this.setAttribute("aria-label", isOpen ? "Close map legend" : "Open map legend");
   });
   document.getElementById("toggle-grid").addEventListener("click", function () {
     if (!state.account) return notify("Sign in to manage your battle map.", "error");

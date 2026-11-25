@@ -141,7 +141,8 @@ h2, h3 { font-family: var(--display-font); }
 .button[aria-expanded="true"],
 .button[aria-pressed="true"],
 .button[aria-selected="true"],
-.button.is-open { background: var(--gold); color: #151922; }
+.button.is-open,
+.button.is-in-cart { background: var(--gold); color: #151922; }
 .button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 
 .steps {
@@ -233,12 +234,19 @@ label input, label select, label textarea { display: block; margin-top: 6px; fon
 [hidden] { display: none !important; }
 
 .notice {
-  margin: 0 0 20px;
+  position: fixed;
+  z-index: 1000;
+  top: max(12px, env(safe-area-inset-top));
+  left: 50%;
+  width: min(600px, calc(100vw - 24px));
+  margin: 0;
+  transform: translateX(-50%);
   padding: 12px 16px;
   border: 1px solid rgba(196, 164, 93, 0.72);
   border-radius: var(--radius);
   background: rgba(31, 45, 55, 0.96);
   color: var(--gold-light);
+  text-align: center;
 }
 .notice.error { border-color: #e0a9a9; background: #fff0f0; color: #7a2020; }
 .hero { padding-top: 22px; }
@@ -374,25 +382,29 @@ label input, label select, label textarea { display: block; margin-top: 6px; fon
 .map-pdf { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 .grasslands-map { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .fullscreen-turn-control {
-  position: absolute;
-  top: 12px;
-  left: 12px;
+  position: sticky;
+  top: 0;
   z-index: 4;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 14px;
-  max-width: calc(100% - 24px);
-  padding: 10px 14px;
+  gap: 10px;
+  max-width: 100%;
+  margin: 0 0 12px;
+  padding: 10px;
   border: 1px solid #ffffff55;
   border-radius: var(--radius);
   background: rgba(22, 32, 35, .9);
   color: #f6f1df;
   box-shadow: 0 2px 8px #0005;
 }
+.fullscreen-turn-control > div { flex: 1 0 100%; }
 .fullscreen-turn-control[hidden] { display: none; }
 .fullscreen-turn-control p { margin: 0 0 3px; }
 .fullscreen-turn-control label { display: flex; align-items: center; gap: 6px; margin: 0; color: #f6f1df; }
 .fullscreen-turn-control input { width: 68px; }
+.fullscreen-turn-control .button { margin: 0; }
+.fullscreen-legend-toggle { display: none; }
 .fullscreen-exit { position: absolute; top: 12px; right: 12px; z-index: 5; }
 .map-grid {
   position: absolute;
@@ -502,8 +514,11 @@ label input, label select, label textarea { display: block; margin-top: 6px; fon
   right: 0;
   width: min(390px, 92vw);
   height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
   padding: 20px;
-  overflow-y: auto;
+  overflow: hidden;
   background: var(--surface-deep);
   border-left: 1px solid var(--border);
   box-shadow: -18px 0 44px rgba(0, 0, 0, .42);
@@ -514,9 +529,10 @@ label input, label select, label textarea { display: block; margin-top: 6px; fon
 .cart-drawer-header, .cart-drawer-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .cart-drawer-header h2 { margin: 0; }
 .cart-drawer-header .button { margin: 0; }
-.cart-drawer-list { display: grid; gap: 12px; margin: 18px 0; }
+.cart-drawer-list { display: grid; flex: 1 1 auto; min-height: 0; gap: 12px; margin: 18px 0; overflow-y: auto; overscroll-behavior: contain; }
 .cart-drawer-list .marketplace-card { border-radius: var(--radius); }
-.cart-drawer-footer { position: sticky; bottom: 0; margin: 16px -20px -20px; padding: 16px 20px 20px; background: var(--surface-deep); border-top: 1px solid var(--border); }
+.cart-drawer > #marketplace-cart-empty { flex: 1 1 auto; }
+.cart-drawer-footer { flex: 0 0 auto; margin: 16px -20px -20px; padding: 16px 20px 20px; background: var(--surface-deep); border-top: 1px solid var(--border); }
 .cart-drawer-footer .button { margin: 0; }
 .cart-total { margin: 0; }
 .plan-card { display: flex; flex-direction: column; align-items: flex-start; }
@@ -579,7 +595,7 @@ label input, label select, label textarea { display: block; margin-top: 6px; fon
   .confirmation-actions { flex-direction: column-reverse; align-items: stretch; }
   .confirmation-actions .button { width: 100%; }
   .cart-drawer { width: min(390px, 100vw); padding: 16px; }
-  .cart-drawer-footer { margin-right: -16px; margin-left: -16px; padding-right: 16px; padding-left: 16px; }
+  .cart-drawer-footer { margin-right: -16px; margin-bottom: -16px; margin-left: -16px; padding-right: 16px; padding-left: 16px; }
 }
 @media (max-width: 380px) {
   .site-header { padding-right: 12px; padding-left: 12px; }
@@ -593,7 +609,24 @@ label input, label select, label textarea { display: block; margin-top: 6px; fon
 @media (max-width: 800px) and (orientation: portrait) {
   #map-layout:fullscreen { grid-template-columns: minmax(0, 1fr); }
   #map-layout:fullscreen .map-surface { height: 62vh; }
-  #map-layout:fullscreen .map-legend { max-height: 28vh; }
-  #map-layout:fullscreen .fullscreen-turn-control { flex-wrap: wrap; }
-  #map-layout:fullscreen .fullscreen-exit { top: auto; bottom: 12px; }
+  #map-layout:fullscreen .map-legend {
+    position: fixed;
+    z-index: 6;
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    max-height: 45vh;
+    padding: 12px;
+  }
+  #map-layout:fullscreen .fullscreen-turn-control { margin: 0; }
+  #map-layout:fullscreen .fullscreen-legend-toggle {
+    display: inline-flex;
+    min-width: 44px;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+  }
+  #map-layout:fullscreen .map-legend:not(.mobile-legend-open) .map-legend-content { display: none; }
+  #map-layout:fullscreen .fullscreen-exit { top: 12px; bottom: auto; }
 }

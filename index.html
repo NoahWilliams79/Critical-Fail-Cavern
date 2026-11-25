@@ -194,6 +194,9 @@
           <iframe id="map-pdf" title="Uploaded PDF battle map" hidden></iframe>
           <div id="map-grid" class="map-grid" hidden></div>
           <div id="marker-layer" class="marker-layer"></div>
+          <button type="button" class="button secondary fullscreen-exit" id="fullscreen-exit" hidden>Exit full screen</button>
+        </div>
+        <section id="map-legend" class="card map-legend" aria-labelledby="map-legend-title" hidden>
           <div id="fullscreen-turn-control" class="fullscreen-turn-control" hidden>
             <div>
               <p class="muted small">Current turn</p>
@@ -202,12 +205,12 @@
             <label>HP<input id="fullscreen-hp" type="number" min="0" step="1" disabled></label>
             <label>AC<input id="fullscreen-ac" type="number" min="1" max="30" step="1" disabled></label>
             <button type="button" class="button" id="fullscreen-end-turn">End turn</button>
+            <button type="button" class="button secondary fullscreen-legend-toggle" id="fullscreen-legend-toggle" aria-label="Open map legend" aria-controls="map-legend-content" aria-expanded="false">•••</button>
           </div>
-          <button type="button" class="button secondary fullscreen-exit" id="fullscreen-exit" hidden>Exit full screen</button>
-        </div>
-        <section id="map-legend" class="card map-legend" aria-labelledby="map-legend-title" hidden>
-          <h2 id="map-legend-title">Map legend</h2>
-          <ol id="map-legend-list" class="map-legend-list"></ol>
+          <div id="map-legend-content" class="map-legend-content">
+            <h2 id="map-legend-title">Map legend</h2>
+            <ol id="map-legend-list" class="map-legend-list"></ol>
+          </div>
         </section>
       </div>
       <p class="muted small">PDF display uses your browser's built-in viewer. The selected file is not uploaded or saved; choose it again after refreshing.</p>

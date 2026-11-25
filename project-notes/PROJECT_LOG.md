@@ -156,7 +156,7 @@ Copy this block for each session.
 - **Committed?** yes / no — commit message: yes - Enhance combat and collection management: improve turn index validation, add collection quantity checks, implement listing lock functionality, and refine UI for locked entries in marketplace and collection views.
 
 ---
-### Session — [Novemeber 16th, 2026] — driver: [Noah]
+### Session — [Novemeber 25th, 2026] — driver: [Noah]
 
 - **Goal for this session:** last minute checks/fixes before link goes live.
 - **Key prompts we gave Copilot** (paste the important ones):
@@ -164,6 +164,20 @@ Copy this block for each session.
 - **What worked:** 
 - **What broke, and how we fixed it:** N/A
 - **Committed?** yes / no — commit message: yes - Update marker styles for combatants: change player marker to enemy marker in UI and adjust corresponding CSS classes for better clarity in initiative tracking.
+
+---
+### Session — [Novemeber 25th, 2026] — driver: [Noah]
+
+- **Goal for this session:** trouble shooting app fixes on phone
+- **Key prompts we gave Copilot** (paste the important ones):
+  1. when selecting add to cart button on a phone screen highlighted same way as in hover in computer browser
+  2. provide an "Added to Cart" popup at top of screen no matter screensize 
+  3. lock total price and complete purchase section of cart to bottom of cart screen, should stay stationary when scrolling trough items in cart
+  4. move the in battle map inititive tracker off the map surface and on to the top of the legend, on mobile make the inititive tracker anchored off map at bottom but give 3 dots that alow you to open a menu to bring up legend
+
+- **What worked:** 
+- **What broke, and how we fixed it:** N/A
+- **Committed?** yes / no — commit message: yes - Enhance UI and functionality for cart and fullscreen features: update cart button states, improve fullscreen legend toggle, and refine notification styles for better user experience.
 
 ---
 ## Things that broke (running list)
