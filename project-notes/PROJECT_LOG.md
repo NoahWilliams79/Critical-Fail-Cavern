@@ -176,7 +176,7 @@ Copy this block for each session.
   4. move the in battle map inititive tracker off the map surface and on to the top of the legend, on mobile make the inititive tracker anchored off map at bottom but give 3 dots that alow you to open a menu to bring up legend
 
 - **What worked:** nothing
-- **What broke, and how we fixed it:** app wont deploy to live link, tried rerunning, 
+- **What broke, and how we fixed it:** app wont deploy to live link, tried rerunning, app crashed, deploy issues, closed all app instances and vs code and re opened from github and applied changes
 - **Committed?** yes / no — commit message: yes - Enhance UI and functionality for cart and fullscreen features: update cart button states, improve fullscreen legend toggle, and refine notification styles for better user experience.
 
 ---
