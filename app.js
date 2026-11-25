@@ -129,8 +129,8 @@
     if (listing.seller === "Demo Adventurer") listing.seller = "BSAD 281 Demo account";
   });
   if (state.account && state.account.membership === "Pro") state.account.membership = "Creator";
-  if (!Number.isInteger(state.turnIndex)) state.turnIndex = 0;
-  if (!Number.isInteger(state.round) || state.round < 1) state.round = 1;
+  if (!Number.isInteger(state.turnIndex) || state.turnIndex < 0 || state.turnIndex >= state.combatants.length) state.turnIndex = 0;
+  if (!Number.isSafeInteger(state.round) || state.round < 1) state.round = 1;
 
   const notice = document.getElementById("notice");
   document.title = STARTUP.name;
@@ -271,8 +271,35 @@
     }, 0);
   }
 
+  function collectionQuantityFits(entry, quantity) {
+    const currentCount = collectionCount();
+    const existingQuantity = entry ? Math.max(0, Number(entry.quantity) || 0) : 0;
+    const updatedCount = currentCount - existingQuantity + quantity;
+    return updatedCount <= collectionLimit() || Boolean(entry && updatedCount <= currentCount);
+  }
+
+  function unlockedCollectionQuantity(entry) {
+    let remaining = collectionLimit();
+    for (const candidate of state.collection) {
+      const quantity = Math.max(0, Number(candidate.quantity) || 0);
+      const unlocked = Math.min(quantity, remaining);
+      if (candidate === entry) return unlocked;
+      remaining = Math.max(0, remaining - unlocked);
+    }
+    return 0;
+  }
+
   function listingLimit() {
     return PLAN_LIMITS[currentPlan()].listings;
+  }
+
+  function listingLimitReached() {
+    return state.marketListings.length >= listingLimit();
+  }
+
+  function isListingLocked(item) {
+    const index = state.marketListings.findIndex(function (listing) { return listing.id === item.id; });
+    return index >= listingLimit();
   }
 
   function getMiniature(id) {
@@ -289,8 +316,11 @@
 
   function getCombatantMiniature(combatant) {
     if (!combatant) return null;
-    return getCollectionEntry(combatant.collectionEntryId) ||
-      getMiniature(combatant.miniatureId) ||
+    const collectionEntry = getCollectionEntry(combatant.collectionEntryId);
+    if (collectionEntry) {
+      return unlockedCollectionQuantity(collectionEntry) > 0 ? collectionEntry : null;
+    }
+    return getMiniature(combatant.miniatureId) ||
       combatant.miniatureSnapshot ||
       null;
   }
@@ -303,6 +333,20 @@
     return state.combatants.slice().sort(function (a, b) {
       return Number(b.initiative) - Number(a.initiative);
     });
+  }
+
+  function isValidCombatantSnapshot(combatant) {
+    if (!combatant || typeof combatant !== "object" || typeof combatant.id !== "string" ||
+        !combatant.id.trim() || typeof combatant.name !== "string" || !combatant.name.trim() ||
+        (combatant.kind !== "Player" && combatant.kind !== "Creature")) return false;
+    const initiative = Number(combatant.initiative);
+    const hp = Number(combatant.hp);
+    const maxHp = Number(combatant.maxHp);
+    const armorClass = Number(combatant.ac);
+    return Number.isInteger(initiative) && initiative >= -10 && initiative <= 50 &&
+      Number.isInteger(maxHp) && maxHp >= 1 && maxHp <= 9999 &&
+      Number.isInteger(hp) && hp >= 0 && hp <= maxHp &&
+      Number.isInteger(armorClass) && armorClass >= 1 && armorClass <= 30;
   }
 
   function sortEncounter() {
@@ -435,7 +479,9 @@
     });
     const grid = document.getElementById("collection-grid");
     grid.replaceChildren.apply(grid, matches.map(function (entry) {
-      const card = element("article", "card");
+      const unlockedQuantity = unlockedCollectionQuantity(entry);
+      const lockedQuantity = Math.max(0, Number(entry.quantity || 0) - unlockedQuantity);
+      const card = element("article", "card" + (lockedQuantity > 0 ? " locked-entry" : ""));
       const image = element("img", "collection-image");
       image.src = marketplaceImageSource(entry);
       image.alt = entry.name + " miniature";
@@ -448,6 +494,9 @@
         element("p", "", "Painting: " + entry.paintingStatus),
         element("p", "notes-text", entry.notes || "No notes yet.")
       );
+      if (lockedQuantity > 0) {
+        card.appendChild(element("p", "locked-count", lockedQuantity + " of " + entry.quantity + " locked by your " + currentPlan() + " plan limit."));
+      }
       const quantity = element("div", "quantity-control");
       quantity.appendChild(makeButton("−", "button secondary small-button", function () {
         entry.quantity = Math.max(1, Number(entry.quantity || 1) - 1);
@@ -511,7 +560,9 @@
     });
     select.disabled = availablePurchases.length === 0;
     empty.hidden = availablePurchases.length > 0;
-    submit.disabled = !state.account || availablePurchases.length === 0;
+    const atCollectionLimit = collectionCount() >= collectionLimit();
+    submit.disabled = !state.account || availablePurchases.length === 0 || atCollectionLimit;
+    submit.title = atCollectionLimit ? "Your plan has reached its miniature collection limit." : "";
   }
 
   function renderMiniatureOptions() {
@@ -520,9 +571,12 @@
       const collectionGroup = document.createElement("optgroup");
       collectionGroup.label = "My collection";
       state.collection.forEach(function (entry) {
-        collectionGroup.appendChild(new Option(entry.name + " (" + entry.quantity + ")", "collection|" + entry.id));
+        const unlockedQuantity = unlockedCollectionQuantity(entry);
+        if (unlockedQuantity > 0) {
+          collectionGroup.appendChild(new Option(entry.name + " (" + unlockedQuantity + " available)", "collection|" + entry.id));
+        }
       });
-      if (state.account && state.collection.length) select.appendChild(collectionGroup);
+      if (state.account && collectionGroup.children.length) select.appendChild(collectionGroup);
     });
   }
 
@@ -663,6 +717,7 @@
   }
 
   function saveEncounter() {
+    if (!state.account) return notify("Sign in to save encounters.", "error");
     const name = document.getElementById("encounter-name").value.trim();
     if (!name) return notify("Give this encounter a name before saving.", "error");
     if (!state.combatants.length) return notify("Add at least one combatant before saving an encounter.", "error");
@@ -685,12 +740,24 @@
   }
 
   function loadEncounter() {
+    if (!state.account) return notify("Sign in to load encounters.", "error");
     const id = document.getElementById("saved-encounters").value;
-    const encounter = state.savedEncounters.find(function (item) { return item.id === id; });
+    const encounter = state.savedEncounters.find(function (item) { return item && item.id === id; });
     if (!encounter) return notify("Choose a saved encounter to load.", "error");
+    if (typeof encounter.name !== "string" || !encounter.name.trim()) {
+      return notify("That saved encounter has an invalid name.", "error");
+    }
+    if (!Array.isArray(encounter.combatants) || encounter.combatants.length === 0 ||
+        !encounter.combatants.every(isValidCombatantSnapshot)) {
+      return notify("That saved encounter is invalid or has no valid combatants.", "error");
+    }
+    const savedRound = Number(encounter.round);
+    if (!Number.isSafeInteger(savedRound) || savedRound < 1) {
+      return notify("That saved encounter has an invalid round number.", "error");
+    }
     state.encounterName = encounter.name;
     state.combatants = encounter.combatants.map(function (combatant) { return Object.assign({}, combatant); });
-    state.round = Math.max(1, Number(encounter.round) || 1);
+    state.round = savedRound;
     state.turnIndex = Math.max(0, state.combatants.findIndex(function (combatant) { return combatant.id === encounter.currentCombatantId; }));
     state.mapMarkers = Array.isArray(encounter.mapMarkers) ? encounter.mapMarkers.map(function (marker) { return Object.assign({}, marker); }) : [];
     state.gridEnabled = Boolean(encounter.gridEnabled);
@@ -832,11 +899,13 @@
       button.addEventListener("pointermove", function (event) {
         if (!pointerStart || !button.hasPointerCapture(event.pointerId)) return;
         const rect = surface.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) return;
         const dx = event.clientX - pointerStart.x;
         const dy = event.clientY - pointerStart.y;
         if (Math.abs(dx) + Math.abs(dy) > 3) wasDragged = true;
         const x = Math.max(0, Math.min(100, ((event.clientX - rect.left) / rect.width) * 100));
         const y = Math.max(0, Math.min(100, ((event.clientY - rect.top) / rect.height) * 100));
+        if (!Number.isFinite(x) || !Number.isFinite(y)) return;
         marker.x = x;
         marker.y = y;
         button.style.left = x + "%";
@@ -852,7 +921,11 @@
         }
         if (button.hasPointerCapture(event.pointerId)) button.releasePointerCapture(event.pointerId);
       });
-      button.addEventListener("pointercancel", function () { pointerStart = null; });
+      button.addEventListener("pointercancel", function () {
+        if (pointerStart && wasDragged) saveState("Map marker moved.");
+        pointerStart = null;
+        wasDragged = false;
+      });
       button.addEventListener("click", function () {
         if (button.suppressNextClick) return;
         state.selectedCombatantId = combatant.id;
@@ -968,6 +1041,7 @@
 
   function getPurchaseBlockMessage(item) {
     if (!state.account) return "Sign in to purchase marketplace listings.";
+    if (isListingLocked(item)) return "This listing is locked by your " + currentPlan() + " plan limit.";
     if ((item.owner || item.seller) === state.account.name) return "You cannot purchase your own listing.";
     if (hasPurchasedDigitalListing(item)) return "You already purchased this digital STL.";
     if (item.type === "Physical" && getListingQuantity(item) < 1) return "Sold out.";
@@ -1064,12 +1138,17 @@
 
     const actions = element("div", "action-links");
     const alreadyPurchased = hasPurchasedDigitalListing(item);
+    const listingLocked = isListingLocked(item);
     const isOwnListing = Boolean(state.account && (item.owner || item.seller) === state.account.name);
     const soldOut = item.type === "Physical" && getListingQuantity(item) < 1;
-    const purchaseButton = makeButton(soldOut ? "Sold Out" : (alreadyPurchased ? "Purchased" : "Add To Cart 🛒"), "button", function () { addToCart(item); });
+    const purchaseButton = makeButton(soldOut ? "Sold Out" : (listingLocked ? "Locked" : (alreadyPurchased ? "Purchased" : "Add To Cart 🛒")), "button", function () { addToCart(item); });
     if (soldOut) {
       purchaseButton.disabled = true;
       purchaseButton.title = "Sold out.";
+    } else if (listingLocked) {
+      purchaseButton.disabled = true;
+      purchaseButton.title = "This listing is locked by your " + currentPlan() + " plan limit.";
+      details.appendChild(element("p", "locked-count small", purchaseButton.title));
     } else if (isOwnListing) {
       purchaseButton.disabled = true;
       purchaseButton.title = "You cannot purchase your own listing.";
@@ -1098,7 +1177,8 @@
     document.getElementById("market-count").textContent = state.account ? items.length + " listing(s)" : "";
     const grid = document.getElementById("market-grid");
     grid.replaceChildren.apply(grid, items.map(function (item) {
-      const card = element("article", "card marketplace-card");
+      const listingLocked = isListingLocked(item);
+      const card = element("article", "card marketplace-card" + (listingLocked ? " locked-listing" : ""));
       const productLink = element("a", "marketplace-product-link");
       productLink.href = "#marketplace";
       productLink.setAttribute("aria-haspopup", "dialog");
@@ -1120,6 +1200,9 @@
         element("p", "marketplace-description", item.description),
         element("p", "muted small", "Seller: " + (item.owner || item.seller))
       );
+      if (listingLocked) {
+        content.appendChild(element("p", "locked-count small", "Locked by your " + currentPlan() + " plan listing limit."));
+      }
       if (item.type === "Physical") {
         const quantity = getListingQuantity(item);
         content.appendChild(element("p", "muted small", quantity > 0 ? quantity + " available" : "Sold out"));
@@ -1137,10 +1220,13 @@
       const isOwnListing = Boolean(state.account && (item.owner || item.seller) === state.account.name);
       const alreadyPurchased = hasPurchasedDigitalListing(item);
       const soldOut = item.type === "Physical" && getListingQuantity(item) < 1;
-      const purchaseButton = makeButton(soldOut ? "Sold Out" : (alreadyPurchased ? "Purchased" : "Add To Cart 🛒"), "button", function () { addToCart(item); });
+      const purchaseButton = makeButton(soldOut ? "Sold Out" : (listingLocked ? "Locked" : (alreadyPurchased ? "Purchased" : "Add To Cart 🛒")), "button", function () { addToCart(item); });
       if (soldOut) {
         purchaseButton.disabled = true;
         purchaseButton.title = "Sold out.";
+      } else if (listingLocked) {
+        purchaseButton.disabled = true;
+        purchaseButton.title = "This listing is locked by your " + currentPlan() + " plan limit.";
       } else if (isOwnListing) {
         purchaseButton.disabled = true;
         purchaseButton.title = "You cannot purchase your own listing.";
@@ -1169,11 +1255,11 @@
     const limit = listingLimit();
     const limitText = limit === Infinity ? "unlimited" : String(limit);
     document.getElementById("listing-capacity").textContent =
-      state.marketListings.length + " of " + limitText + " active listings used on your " + currentPlan() + " plan.";
+      state.marketListings.length + " saved listing(s) · " + limitText + " allowed on your " + currentPlan() + " plan.";
     const isEditing = Boolean(document.querySelector("#listing-form [name='listingId']").value);
     const submit = document.querySelector("#listing-form button[type='submit']");
-    submit.disabled = !state.account || (!isEditing && state.marketListings.length >= limit);
-    submit.title = !state.account ? "Sign in to create a listing." : (!isEditing && state.marketListings.length >= limit ? "Your plan has reached its active listing limit." : "");
+    submit.disabled = !state.account || (!isEditing && listingLimitReached());
+    submit.title = !state.account ? "Sign in to create a listing." : (!isEditing && listingLimitReached() ? "Your plan has reached its active listing limit." : "");
     if (!state.account) document.getElementById("listing-capacity").textContent += " Sign in to manage your listings.";
   }
 
@@ -1321,12 +1407,12 @@
     toggle.textContent = "🛒 Cart (" + state.cart.length + ")";
     toggle.disabled = !state.account;
     toggle.title = state.account ? "" : "Sign in to view your cart.";
-    const hasBlockedCartItem = state.cart.some(function (listingId) {
+    const cartBlockMessage = state.cart.map(function (listingId) {
       const item = findMarketplaceListing(listingId);
-      return item && getPurchaseBlockMessage(item);
-    });
-    completeButton.disabled = !state.account || state.cart.length === 0 || hasBlockedCartItem;
-    completeButton.title = hasBlockedCartItem ? "Remove unavailable items before completing your purchase." : "";
+      return item ? getPurchaseBlockMessage(item) : "";
+    }).find(Boolean) || "";
+    completeButton.disabled = !state.account || state.cart.length === 0 || Boolean(cartBlockMessage);
+    completeButton.title = cartBlockMessage;
     list.replaceChildren();
     state.cart.forEach(function (listingId) {
       const item = findMarketplaceListing(listingId);
@@ -1339,9 +1425,8 @@
         element("p", "price marketplace-price", "$" + Number(item.price).toFixed(2)),
         element("p", "muted small", "Quantity: 1")
       );
-      if (item.type === "Physical" && getListingQuantity(item) < 1) {
-        content.appendChild(element("p", "muted small", "Sold out"));
-      }
+      const blockMessage = getPurchaseBlockMessage(item);
+      if (blockMessage) content.appendChild(element("p", "locked-count small", blockMessage));
       const actions = element("div", "action-links");
       actions.appendChild(makeButton("Remove", "button secondary danger-button", function () {
         state.cart = state.cart.filter(function (id) { return id !== listingId; });
@@ -1372,7 +1457,7 @@
     } else {
       current.replaceChildren(element("strong", "", "Current plan: " + plan));
       current.appendChild(element("p", "muted", "Collection: " + collectionCount() + "/" + (PLAN_LIMITS[plan].collection === 10000 ? "generous" : PLAN_LIMITS[plan].collection) +
-        " · Active marketplace listings: " + state.marketListings.length + "/" + (PLAN_LIMITS[plan].listings === Infinity ? "unlimited" : PLAN_LIMITS[plan].listings)));
+        " · Marketplace listings: " + state.marketListings.length + "/" + (PLAN_LIMITS[plan].listings === Infinity ? "unlimited" : PLAN_LIMITS[plan].listings)));
     }
     const plans = [
       { name: "Free", price: "Free", collection: "Save up to 20 miniatures", listings: "2 active marketplace listings" },
@@ -1513,7 +1598,7 @@
     if (!Number.isInteger(quantity) || quantity < 1 || quantity > 999) return notify("Quantity must be a whole number between 1 and 999.", "error");
     const entry = editingCollectionId ? getCollectionEntry(editingCollectionId) : null;
     if (editingCollectionId && !entry) return notify("That collection item no longer exists.", "error");
-    if (entry && collectionCount() - Number(entry.quantity || 0) + quantity > collectionLimit()) {
+    if (entry && !collectionQuantityFits(entry, quantity)) {
       return notify("That quantity would exceed your " + currentPlan() + " collection limit. Upgrade your plan or lower the quantity.", "error");
     }
     if (!entry && collectionCount() + quantity > collectionLimit()) {
@@ -1521,6 +1606,13 @@
     }
 
     const saveCollectionEntry = function (imageData) {
+      if (!state.account) return notify("Sign in before managing your collection.", "error");
+      if (entry && !state.collection.includes(entry)) return notify("That collection item no longer exists.", "error");
+      if (!collectionQuantityFits(entry, quantity)) {
+        notify("That quantity would exceed your " + currentPlan() + " collection limit. Upgrade your plan or lower your quantity.", "error");
+        renderCollection();
+        return;
+      }
       if (entry) {
         ["name", "creatureType", "size", "gameSystem", "creator", "paintingStatus", "notes"].forEach(function (key) { entry[key] = String(values[key] || "").trim(); });
         entry.quantity = quantity;
@@ -1582,6 +1674,12 @@
     }
 
     const saveImportedPurchase = function (imageData) {
+      if (!state.account) return notify("Sign in before importing marketplace purchases.", "error");
+      if (collectionCount() >= collectionLimit()) {
+        notify("Your " + currentPlan() + " plan has reached its collection limit. Upgrade your plan for more space.", "error");
+        renderMarketplaceImport();
+        return;
+      }
       state.collection.push({
         id: createId("collection"),
         purchaseId: purchase.id,
@@ -1634,6 +1732,9 @@
     if (selected[0] === "collection") {
       const entry = getCollectionEntry(selected[1]);
       if (entry) {
+        if (unlockedCollectionQuantity(entry) < 1) {
+          return notify("That miniature is locked by your plan's collection limit.", "error");
+        }
         miniature = entry;
         collectionEntryId = entry.id;
       }
@@ -1649,8 +1750,13 @@
     if (!Number.isInteger(armorClass) || armorClass < 1 || armorClass > 30) {
       return notify("Armor class must be a whole number between 1 and 30.", "error");
     }
+    if (values.initiativeMode !== "roll" && values.initiativeMode !== "manual") {
+      return notify("Choose whether to roll or enter initiative manually.", "error");
+    }
     const initiative = values.initiativeMode === "roll" ? Math.floor(Math.random() * 20) + 1 : Number(values.initiative);
-    if (!Number.isFinite(initiative) || initiative < -10 || initiative > 50) return notify("Initiative must be between -10 and 50.", "error");
+    if (!Number.isInteger(initiative) || initiative < -10 || initiative > 50) {
+      return notify("Initiative must be a whole number between -10 and 50.", "error");
+    }
     const newCombatant = {
       id: createId("combatant"),
       name: name,
@@ -1712,7 +1818,11 @@
     setCreatureFormOpen(false);
   });
   document.getElementById("next-turn").addEventListener("click", function () {
+    if (!state.account) return notify("Sign in to use the initiative tracker.", "error");
     if (!state.combatants.length) return notify("Add a combatant before advancing turns.", "error");
+    if (!Number.isSafeInteger(state.round) || state.round >= Number.MAX_SAFE_INTEGER) {
+      return notify("The round counter cannot advance any further.", "error");
+    }
     state.turnIndex += 1;
     if (state.turnIndex >= state.combatants.length) {
       state.turnIndex = 0;
@@ -1947,7 +2057,7 @@
       if (allowedTypes.indexOf(imageFile.type.toLowerCase()) === -1) return notify("Choose a PNG, JPEG, WebP, or GIF image.", "error");
       if (imageFile.size > MAX_IMAGE_SIZE) return notify("Listing images must be 1 MB or smaller.", "error");
     }
-    if (!id && state.marketListings.length >= listingLimit()) {
+    if (!id && listingLimitReached()) {
       return notify("Your " + currentPlan() + " plan has reached its active listing limit. Upgrade for more listings.", "error");
     }
     const submit = form.querySelector("button[type='submit']");
@@ -1970,6 +2080,11 @@
         resetListingForm();
         saveState("Listing updated.");
       } else {
+        if (listingLimitReached()) {
+          notify("Your " + currentPlan() + " plan has reached its active listing limit. Upgrade for more listings.", "error");
+          renderMarketplace();
+          return;
+        }
         state.marketListings.push({
           id: createId("market"),
           name: name,

@@ -137,6 +137,23 @@ Copy this block for each session.
 - **What worked:** 
 - **What broke, and how we fixed it:** N/A
 - **Committed?** yes / no — commit message: yes - Refactor UI elements and improve functionality: rename "My Collection" to "The Vault", add enemy checkbox to combatant forms, enhance button styles, and ensure proper handling of sold-out items in the marketplace.
+
+---
+### Session — [Novemeber 25th, 2026] — driver: [Noah]
+
+- **Goal for this session:** testing and phone accessability
+- **Key prompts we gave Copilot** (paste the important ones):
+  1. format so the app can run well on phone or ipad
+  2. Test marketplace limits check for edge case failures
+  3. check test cases for cart limits and purchase errors
+  4. Test vault limits check for edge case failures
+  5. Lock all vault collectiions,and market place listings above tier limit
+  6. test for inititive edge cases and errors
+  7. test for Battle map edge cases and errors
+  8. test full app applications assuming you are on a cell phone
+- **What worked:** 
+- **What broke, and how we fixed it:** N/A
+- **Committed?** yes / no — commit message: yes - Enhance combat and collection management: improve turn index validation, add collection quantity checks, implement listing lock functionality, and refine UI for locked entries in marketplace and collection views.
 ---
 ## Things that broke (running list)
 

@@ -277,6 +277,9 @@ label input, label select, label textarea { display: block; margin-top: 6px; fon
 .checkbox-field input[type="checkbox"] { width: auto; margin: 0; accent-color: var(--gold); }
 .small { font-size: 0.88rem; }
 .notes-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.locked-entry { border-color: rgba(196, 164, 93, 0.68); }
+.locked-listing { border-color: rgba(196, 164, 93, 0.68); }
+.locked-count { color: var(--gold-light); font-weight: 600; }
 .quantity-control, .health-control {
   display: flex;
   flex-wrap: wrap;
@@ -526,16 +529,71 @@ label input, label select, label textarea { display: block; margin-top: 6px; fon
 .empty { padding: 14px 0; }
 
 @media (max-width: 800px) {
-  .site-header { align-items: flex-start; }
-  .site-header nav { justify-content: flex-start; }
+  .site-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 20px;
+  }
+  .site-header nav {
+    width: 100%;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 8px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    padding: 2px 0 6px;
+  }
+  nav a { min-height: 44px; display: inline-flex; align-items: center; padding: 0 8px; }
   .encounter-toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dashboard-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
+  .map-layout { grid-template-columns: minmax(0, 1fr) clamp(180px, 30vw, 260px); }
 }
 @media (max-width: 600px) {
-  nav { gap: 10px 14px; }
+  main { padding: 20px 14px 40px; }
+  .brand { font-size: 1.2rem; }
+  h1 { font-size: clamp(1.65rem, 7vw, 2.2rem); }
+  .hero { padding: 28px 20px 30px; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stat-card strong { font-size: 1.35rem; }
+  .grid, .dashboard-grid, .steps { grid-template-columns: minmax(0, 1fr); }
+  .filter-grid, .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .filter-grid .search, .form-grid .wide { grid-column: 1 / -1; }
   .collection-toolbar, .market-tools, .encounter-toolbar { grid-template-columns: 1fr; }
-  .marketplace-heading { align-items: flex-start; }
+  .marketplace-heading { align-items: stretch; flex-direction: column; }
   .marketplace-detail-layout { grid-template-columns: 1fr; }
-  .map-layout { grid-template-columns: minmax(0, 1fr) minmax(150px, 42%); gap: 8px; }
-  .map-surface { min-height: 300px; aspect-ratio: 4 / 3; }
+  .map-layout { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .map-surface { min-height: clamp(260px, 70vw, 420px); aspect-ratio: 4 / 3; }
+  .map-legend { max-height: 230px; }
   .profile-form { grid-template-columns: 1fr; }
+  .map-toolbar { align-items: stretch; }
+  .map-toolbar > label, .inline-form, .inline-form label { width: 100%; min-width: 0; }
+  .inline-form .button { width: 100%; }
+  .action-links > .button { min-height: 44px; }
+  .combatant-heading { flex-wrap: wrap; }
+  .health-control { gap: 8px; }
+  .health-control input { width: 72px; }
+  .marketplace-detail-dialog { width: calc(100% - 16px); max-height: 94vh; padding: 16px; }
+  .marketplace-detail-header { align-items: flex-start; }
+  .confirmation-actions { flex-direction: column-reverse; align-items: stretch; }
+  .confirmation-actions .button { width: 100%; }
+  .cart-drawer { width: min(390px, 100vw); padding: 16px; }
+  .cart-drawer-footer { margin-right: -16px; margin-left: -16px; padding-right: 16px; padding-left: 16px; }
+}
+@media (max-width: 380px) {
+  .site-header { padding-right: 12px; padding-left: 12px; }
+  main { padding-right: 12px; padding-left: 12px; }
+  .filter-grid, .form-grid { grid-template-columns: minmax(0, 1fr); }
+  .filter-grid .search, .form-grid .wide { grid-column: auto; }
+  .stats-grid { grid-template-columns: minmax(0, 1fr); }
+  .hero { padding-right: 16px; padding-left: 16px; }
+  .action-links > .button { width: 100%; }
+}
+@media (max-width: 800px) and (orientation: portrait) {
+  #map-layout:fullscreen { grid-template-columns: minmax(0, 1fr); }
+  #map-layout:fullscreen .map-surface { height: 62vh; }
+  #map-layout:fullscreen .map-legend { max-height: 28vh; }
+  #map-layout:fullscreen .fullscreen-turn-control { flex-wrap: wrap; }
+  #map-layout:fullscreen .fullscreen-exit { top: auto; bottom: 12px; }
 }
