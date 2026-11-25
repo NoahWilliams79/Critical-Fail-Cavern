@@ -96,16 +96,22 @@
     const quantity = Number(listing.quantity);
     listing.quantity = Number.isInteger(quantity) && quantity >= 0 ? quantity : 1;
   });
-  state.marketListings = state.marketListings.filter(function (listing) {
-    return listing.type !== "Physical" || listing.quantity > 0;
-  });
   function normalizeArmorClass(combatant) {
     const armorClass = Number(combatant.ac);
     combatant.ac = Number.isInteger(armorClass) && armorClass >= 1 && armorClass <= 30 ? armorClass : 10;
   }
   state.combatants.forEach(normalizeArmorClass);
+  state.collection.forEach(function (entry) { delete entry.enemy; });
+  state.combatants.forEach(function (combatant) {
+    combatant.enemy = Boolean(combatant.enemy);
+  });
   state.savedEncounters.forEach(function (encounter) {
-    if (Array.isArray(encounter.combatants)) encounter.combatants.forEach(normalizeArmorClass);
+    if (Array.isArray(encounter.combatants)) {
+      encounter.combatants.forEach(function (combatant) {
+        normalizeArmorClass(combatant);
+        combatant.enemy = Boolean(combatant.enemy);
+      });
+    }
   });
   if (!state.account || typeof state.account !== "object") state.account = null;
   if (!state.localProfile || typeof state.localProfile !== "object") state.localProfile = null;
@@ -571,10 +577,13 @@
       setCreatureFormOpen(false);
     }
     list.replaceChildren.apply(list, (state.account ? ordered : []).map(function (combatant) {
-      const card = element("article", "card combatant-card" + (combatant.id === (active && active.id) ? " current-turn" : "") + (combatant.id === state.selectedCombatantId ? " selected-combatant" : ""));
+      const card = element("article", "card combatant-card" +
+        (combatant.enemy ? " enemy-combatant" : "") +
+        (combatant.id === (active && active.id) ? " current-turn" : "") +
+        (combatant.id === state.selectedCombatantId ? " selected-combatant" : ""));
       const top = element("div", "combatant-heading");
       const identity = element("div");
-      const selectButton = makeButton(combatant.name, "text-button", function () {
+      const selectButton = makeButton(combatant.name, "button text-button", function () {
         selectedCombatant(combatant);
         notify(combatant.name + " selected. Its map marker is highlighted when placed.");
       });
@@ -582,6 +591,7 @@
       identity.appendChild(element("p", "muted small", "Armor class: " + combatant.ac));
       const miniature = getCombatantMiniature(combatant);
       if (miniature) identity.appendChild(element("p", "muted small", "Miniature: " + miniature.name));
+      if (combatant.enemy) identity.appendChild(element("span", "tag enemy-tag", "Enemy"));
       top.append(identity, element("span", "tag", combatant.id === (active && active.id) ? "Current turn" : "Round " + state.round));
       const health = element("div", "health-control");
       const hpInput = document.createElement("input");
@@ -796,14 +806,17 @@
       const combatant = getCombatant(marker.combatantId);
       if (!combatant) return;
       markerNumber += 1;
-      const button = element("button", "map-marker" + (combatant.id === state.selectedCombatantId ? " marker-selected" : ""));
+      const button = element("button", "map-marker" +
+        (combatant.kind === "Player" ? " player-marker" : "") +
+        (combatant.id === state.selectedCombatantId ? " marker-selected" : ""));
       button.type = "button";
       button.style.left = Math.max(0, Math.min(100, Number(marker.x))) + "%";
       button.style.top = Math.max(0, Math.min(100, Number(marker.y))) + "%";
       button.setAttribute("aria-label", "Marker " + markerNumber + ". See the map legend for details. Select or drag marker.");
       button.appendChild(element("span", "map-marker-token", String(markerNumber)));
       const legendEntry = element("li", "map-legend-entry" + (combatant.id === state.selectedCombatantId ? " legend-selected" : ""));
-      const legendToken = element("span", "map-legend-token", String(markerNumber));
+      const legendToken = element("span", "map-legend-token" +
+        (combatant.kind === "Player" ? " player-marker" : ""), String(markerNumber));
       legendToken.setAttribute("aria-hidden", "true");
       legendEntry.append(legendToken, element("span", "", combatant.name + " (" + combatant.kind + ") · Initiative " + combatant.initiative + " · AC " + combatant.ac + " · " + combatant.hp + "/" + combatant.maxHp + " HP"));
       legendList.appendChild(legendEntry);
@@ -953,17 +966,17 @@
     }) || null;
   }
 
+  function getPurchaseBlockMessage(item) {
+    if (!state.account) return "Sign in to purchase marketplace listings.";
+    if ((item.owner || item.seller) === state.account.name) return "You cannot purchase your own listing.";
+    if (hasPurchasedDigitalListing(item)) return "You already purchased this digital STL.";
+    if (item.type === "Physical" && getListingQuantity(item) < 1) return "Sold out.";
+    return "";
+  }
+
   function addToCart(item) {
-    if (!state.account) return notify("Sign in to add marketplace listings to your cart.", "error");
-    if (state.account && (item.owner || item.seller) === state.account.name) {
-      return notify("You cannot purchase your own listing.", "error");
-    }
-    if (hasPurchasedDigitalListing(item)) {
-      return notify("You already purchased this digital STL.", "error");
-    }
-    if (item.type === "Physical" && getListingQuantity(item) < 1) {
-      return notify("This physical listing is out of stock.", "error");
-    }
+    const blockMessage = getPurchaseBlockMessage(item);
+    if (blockMessage) return notify(blockMessage, "error");
     if (state.cart.indexOf(item.id) !== -1) {
       return notify(item.name + " is already in your cart.", "error");
     }
@@ -975,26 +988,22 @@
   }
 
   function simulatePurchase(item) {
-    if (state.account && (item.owner || item.seller) === state.account.name) {
-      return notify("You cannot purchase your own listing.", "error");
-    }
-    if (hasPurchasedDigitalListing(item)) {
-      return notify("You already purchased this digital STL.", "error");
+    const blockMessage = getPurchaseBlockMessage(item);
+    if (blockMessage) {
+      notify(blockMessage, "error");
+      return false;
     }
     const quantity = getListingQuantity(item);
     if (item.type === "Physical" && quantity < 1) {
       const dialog = document.getElementById("marketplace-detail-dialog");
       if (dialog.open) dialog.close();
       renderAll();
-      return notify("This physical listing is out of stock.", "error");
+      notify("This physical listing is out of stock.", "error");
+      return false;
     }
     const remaining = item.type === "Physical" ? quantity - 1 : null;
-    const ownListing = state.marketListings.some(function (listing) { return listing.id === item.id; });
     if (remaining !== null) {
       setListingQuantity(item, remaining);
-      if (remaining === 0 && ownListing) {
-        state.marketListings = state.marketListings.filter(function (listing) { return listing.id !== item.id; });
-      }
     }
     if ((item.type === "Digital STL" || item.type === "Battlemap") &&
         state.purchasedDigitalListingIds.indexOf(item.id) === -1) {
@@ -1014,12 +1023,13 @@
     });
     const soldOut = item.type === "Physical" && remaining === 0;
     recordActivity("Simulated a purchase of \"" + item.name + "\". No payment was processed." +
-      (soldOut ? " The last unit sold and the listing was removed." : ""));
+      (soldOut ? " The listing is now sold out." : ""));
     saveState("Demo purchase recorded for \"" + item.name + "\". No payment was processed." +
-      (soldOut ? " The last unit sold and the listing was removed." : ""));
+      (soldOut ? " The listing is now sold out." : ""));
     const dialog = document.getElementById("marketplace-detail-dialog");
     if (dialog.open) dialog.close();
     renderAll();
+    return true;
   }
 
   function openListingDetails(item) {
@@ -1040,7 +1050,8 @@
       element("p", "muted small", "Seller: " + (item.owner || item.seller))
     );
     if (item.type === "Physical") {
-      details.appendChild(element("p", "muted small", getListingQuantity(item) + " available"));
+      const quantity = getListingQuantity(item);
+      details.appendChild(element("p", "muted small", quantity > 0 ? quantity + " available" : "Sold out"));
     } else {
       details.appendChild(element("p", "muted small", "Digital download"));
     }
@@ -1054,8 +1065,12 @@
     const actions = element("div", "action-links");
     const alreadyPurchased = hasPurchasedDigitalListing(item);
     const isOwnListing = Boolean(state.account && (item.owner || item.seller) === state.account.name);
-    const purchaseButton = makeButton(alreadyPurchased ? "Purchased" : "Add To Cart 🛒", "button", function () { addToCart(item); });
-    if (isOwnListing) {
+    const soldOut = item.type === "Physical" && getListingQuantity(item) < 1;
+    const purchaseButton = makeButton(soldOut ? "Sold Out" : (alreadyPurchased ? "Purchased" : "Add To Cart 🛒"), "button", function () { addToCart(item); });
+    if (soldOut) {
+      purchaseButton.disabled = true;
+      purchaseButton.title = "Sold out.";
+    } else if (isOwnListing) {
       purchaseButton.disabled = true;
       purchaseButton.title = "You cannot purchase your own listing.";
       details.appendChild(element("p", "muted small", "You cannot purchase your own listing."));
@@ -1078,7 +1093,6 @@
     document.querySelector("#listing-form [name='seller']").value = state.account ? state.account.name : "";
     const items = MARKET_SAMPLE.concat(state.marketListings).filter(function (item) {
       return (type === "all" || item.type === type) &&
-        (item.type !== "Physical" || getListingQuantity(item) > 0) &&
         [item.name, item.type, item.owner || item.seller, item.description].join(" ").toLowerCase().indexOf(query) !== -1;
     });
     document.getElementById("market-count").textContent = state.account ? items.length + " listing(s)" : "";
@@ -1107,7 +1121,8 @@
         element("p", "muted small", "Seller: " + (item.owner || item.seller))
       );
       if (item.type === "Physical") {
-        content.appendChild(element("p", "muted small", getListingQuantity(item) + " available"));
+        const quantity = getListingQuantity(item);
+        content.appendChild(element("p", "muted small", quantity > 0 ? quantity + " available" : "Sold out"));
       }
       if (item.reviews) {
         content.append(element("p", "review", "★ " + item.rating + "/5 · " + item.reviews + " fictional reviews"),
@@ -1121,8 +1136,12 @@
       const ownListing = state.marketListings.find(function (listing) { return listing.id === item.id; });
       const isOwnListing = Boolean(state.account && (item.owner || item.seller) === state.account.name);
       const alreadyPurchased = hasPurchasedDigitalListing(item);
-      const purchaseButton = makeButton(alreadyPurchased ? "Purchased" : "Add To Cart 🛒", "button", function () { addToCart(item); });
-      if (isOwnListing) {
+      const soldOut = item.type === "Physical" && getListingQuantity(item) < 1;
+      const purchaseButton = makeButton(soldOut ? "Sold Out" : (alreadyPurchased ? "Purchased" : "Add To Cart 🛒"), "button", function () { addToCart(item); });
+      if (soldOut) {
+        purchaseButton.disabled = true;
+        purchaseButton.title = "Sold out.";
+      } else if (isOwnListing) {
         purchaseButton.disabled = true;
         purchaseButton.title = "You cannot purchase your own listing.";
         actions.appendChild(element("span", "muted small", "You cannot purchase your own listing."));
@@ -1295,14 +1314,19 @@
     const empty = document.getElementById("marketplace-cart-empty");
     const completeButton = document.getElementById("complete-cart-purchase");
     const total = document.getElementById("marketplace-cart-total");
-    const validCartIds = state.cart.filter(function (listingId) {
-      return Boolean(findMarketplaceListing(listingId));
+    const validCartIds = state.cart.filter(function (listingId, index, cart) {
+      return Boolean(findMarketplaceListing(listingId)) && cart.indexOf(listingId) === index;
     });
     if (validCartIds.length !== state.cart.length) state.cart = validCartIds;
     toggle.textContent = "🛒 Cart (" + state.cart.length + ")";
     toggle.disabled = !state.account;
     toggle.title = state.account ? "" : "Sign in to view your cart.";
-    completeButton.disabled = !state.account || state.cart.length === 0;
+    const hasBlockedCartItem = state.cart.some(function (listingId) {
+      const item = findMarketplaceListing(listingId);
+      return item && getPurchaseBlockMessage(item);
+    });
+    completeButton.disabled = !state.account || state.cart.length === 0 || hasBlockedCartItem;
+    completeButton.title = hasBlockedCartItem ? "Remove unavailable items before completing your purchase." : "";
     list.replaceChildren();
     state.cart.forEach(function (listingId) {
       const item = findMarketplaceListing(listingId);
@@ -1315,6 +1339,9 @@
         element("p", "price marketplace-price", "$" + Number(item.price).toFixed(2)),
         element("p", "muted small", "Quantity: 1")
       );
+      if (item.type === "Physical" && getListingQuantity(item) < 1) {
+        content.appendChild(element("p", "muted small", "Sold out"));
+      }
       const actions = element("div", "action-links");
       actions.appendChild(makeButton("Remove", "button secondary danger-button", function () {
         state.cart = state.cart.filter(function (id) { return id !== listingId; });
@@ -1409,9 +1436,11 @@
         element("p", "", "Your collection and marketplace listings are stored only in this browser.")
       );
       panel.appendChild(makeButton("Sign out", "button secondary", function () {
-        state.account = null;
-        saveState("Signed out. Your local data remains on this device.");
-        renderAll();
+        requestConfirmation("Are you sure you want to sign out?", function () {
+          state.account = null;
+          saveState("Signed out. Your local data remains on this device.");
+          renderAll();
+        }, "Sign out", false);
       }));
     }
     const listings = state.marketListings;
@@ -1626,6 +1655,7 @@
       id: createId("combatant"),
       name: name,
       kind: kind,
+      enemy: values.enemy === "on",
       miniatureId: miniature && miniature.miniatureId ? miniature.miniatureId : "",
       collectionEntryId: collectionEntryId,
       miniatureSnapshot: miniature ? {
@@ -1857,11 +1887,24 @@
     if (state.cart.length === 0) return;
     requestConfirmation("Are you sure you'd like to complete this purchase?", function () {
       const cartIds = state.cart.slice();
+      const cartItems = cartIds.map(findMarketplaceListing);
+      if (cartItems.some(function (item) { return !item; })) {
+        state.cart = cartIds.filter(function (listingId) { return Boolean(findMarketplaceListing(listingId)); });
+        saveState("Unavailable listings were removed from your cart.");
+        renderAll();
+        return;
+      }
+      const blockMessage = cartItems.map(getPurchaseBlockMessage).find(Boolean);
+      if (blockMessage) return notify(blockMessage, "error");
+
       state.cart = [];
-      cartIds.forEach(function (listingId) {
-        const item = findMarketplaceListing(listingId);
-        if (item) simulatePurchase(item);
-      });
+      for (let index = 0; index < cartItems.length; index += 1) {
+        if (!simulatePurchase(cartItems[index])) {
+          state.cart = cartItems.slice(index).map(function (item) { return item.id; });
+          renderAll();
+          return;
+        }
+      }
       saveState("Cart purchase complete. No payment was processed.");
       renderAll();
     }, "Complete purchase", false);

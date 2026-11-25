@@ -125,24 +125,24 @@ h2, h3 { font-family: var(--display-font); }
   display: inline-block;
   margin-top: 8px;
   padding: 12px 22px;
-  border: none;
   border-radius: var(--radius);
-  background: linear-gradient(135deg, #9aafbf, var(--brand-dark));
-  color: #10161b;
-  border: 1px solid rgba(222, 201, 146, 0.5);
-  box-shadow: inset 0 1px rgba(255, 255, 255, 0.15), 0 5px 18px rgba(0, 0, 0, 0.24);
+  background: rgba(28, 42, 54, 0.92);
+  color: var(--gold-light);
+  border: 1px solid rgba(196, 164, 93, 0.7);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.08), 0 5px 18px rgba(0, 0, 0, 0.24);
   font: inherit;
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
 }
-.button:hover { background: var(--gold); color: #151922; }
-.button.secondary {
-  background: rgba(28, 42, 54, 0.76);
-  color: var(--gold-light);
-  border: 1px solid rgba(196, 164, 93, 0.58);
-  padding: 8px 14px;
-}
+.button:not(:disabled):hover,
+.button:not(:disabled):focus-visible,
+.button:not(:disabled):active,
+.button[aria-expanded="true"],
+.button[aria-pressed="true"],
+.button[aria-selected="true"],
+.button.is-open { background: var(--gold); color: #151922; }
+.button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 
 .steps {
   display: grid;
@@ -260,7 +260,6 @@ label input, label select, label textarea { display: block; margin-top: 6px; fon
 .action-links { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
 .action-links .button { margin-top: 0; }
 .button.secondary { font: inherit; cursor: pointer; }
-.button.secondary:hover { background: var(--background); }
 .filter-grid, .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
@@ -274,6 +273,8 @@ label input, label select, label textarea { display: block; margin-top: 6px; fon
 .form-card { margin: 20px 0; }
 .form-card h2 { margin-top: 0; }
 .form-card > .button, .form-card > .action-links { margin-top: 14px; }
+.checkbox-field { display: flex; align-items: center; gap: 8px; }
+.checkbox-field input[type="checkbox"] { width: auto; margin: 0; accent-color: var(--gold); }
 .small { font-size: 0.88rem; }
 .notes-text { white-space: pre-wrap; overflow-wrap: anywhere; }
 .quantity-control, .health-control {
@@ -285,9 +286,8 @@ label input, label select, label textarea { display: block; margin-top: 6px; fon
   margin-top: 12px;
 }
 .quantity-control span { font-weight: 600; }
-.small-button { margin: 0; padding: 3px 11px; min-width: 36px; }
-.danger-button { color: #8a2525 !important; border-color: #c98d8d !important; }
-.danger-button:hover { background: #fff0f0 !important; }
+.small-button { margin: 0; min-width: 36px; }
+.danger-button { border-color: rgba(196, 164, 93, 0.7) !important; }
 .collection-toolbar, .market-tools {
   display: grid;
   grid-template-columns: minmax(220px, 2fr) minmax(170px, 1fr);
@@ -303,22 +303,14 @@ label input, label select, label textarea { display: block; margin-top: 6px; fon
   margin: 18px 0;
 }
 .encounter-toolbar p { margin-top: 0; }
-.combatant-list { display: grid; gap: 12px; }
+.combatant-list { display: grid; gap: 12px; margin-top: 20px; }
 .combatant-card { border-left: 5px solid var(--border); }
 .combatant-card.current-turn { border-left-color: var(--brand); }
 .combatant-card.selected-combatant { box-shadow: 0 0 0 2px var(--brand); }
+.combatant-card.enemy-combatant { border: 1px solid #c74747; border-left: 5px solid #c74747; }
 .combatant-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .combatant-heading p { margin: 4px 0 0; }
-.text-button {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--brand);
-  font-size: 1.15rem;
-  font-weight: 700;
-  text-align: left;
-}
-.text-button:hover { text-decoration: underline; }
+.enemy-tag { background: rgba(165, 42, 42, .24); color: #ffb0a8; border: 1px solid #c74747; }
 .health-control input { width: 82px; }
 .health-control span { color: var(--muted); }
 .map-toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 16px; margin: 18px 0 12px; }
@@ -428,6 +420,7 @@ label input, label select, label textarea { display: block; margin-top: 6px; fon
   touch-action: none;
   user-select: none;
 }
+.map-marker.player-marker { background: #b83d3d; border-color: #efaaaa; }
 .map-marker.marker-selected { outline: 3px solid var(--gold); outline-offset: 2px; z-index: 3; }
 .map-legend {
   min-width: 0;
@@ -440,14 +433,13 @@ label input, label select, label textarea { display: block; margin-top: 6px; fon
 .map-legend-entry { display: flex; align-items: flex-start; gap: 9px; padding: 5px 0; }
 .map-legend-entry.legend-selected { color: var(--gold); font-weight: 700; }
 .map-legend-token { display: inline-grid; place-items: center; width: 28px; height: 28px; flex: 0 0 28px; border: 2px solid #fff; border-radius: 50%; background: #667f94; color: #f6f1df; font-size: .85rem; font-weight: 700; }
+.map-legend-token.player-marker { background: #b83d3d; border-color: #efaaaa; }
 .map-jump { margin-left: 6px; white-space: nowrap; font-weight: 600; }
 .price { font-weight: 700; font-size: 1.1rem; }
 .review { margin-bottom: 4px; color: #684e05; font-weight: 600; }
 .marketplace-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .marketplace-heading h1 { margin-top: 0; }
 .marketplace-heading .button { flex: 0 0 auto; margin-top: 0; }
-.button.is-open { background: var(--gold); color: #151922; }
-.button.is-open:hover { background: var(--gold-light); }
 .collection-image { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; margin-bottom: 12px; border-radius: var(--radius); background: #35433b; }
 .marketplace-card { display: flex; flex-direction: column; overflow: hidden; padding: 0; }
 .marketplace-product-link { display: flex; flex: 1; flex-direction: column; min-width: 0; color: inherit; text-decoration: none; }

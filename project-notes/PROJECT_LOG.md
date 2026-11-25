@@ -128,13 +128,15 @@ Copy this block for each session.
 ---
 ### Session — [Novemeber 25th, 2026] — driver: [Noah]
 
-- **Goal for this session:** 
+- **Goal for this session:** Improve UI and theme appearance
 - **Key prompts we gave Copilot** (paste the important ones):
-  1. N/A
-  2. N/A
+  1. make all buttons the navy/grey with a gold outline and gold text, when hovered or selected make them gold with outline and text black, make size the same as the blue buttons.
+  2. create an enemy tag for collection and inititive tracker which gives red border for inititive tracker and make player markers red
+  3.complete the process of buying mini, importing mini, importing into initive , and battle map and check for any issues
+  4. If an item is qty 0 Just state sold out, not remove listing and do not allow its addition to cart.
 - **What worked:** 
 - **What broke, and how we fixed it:** N/A
-- **Committed?** yes / no — commit message: 
+- **Committed?** yes / no — commit message: yes - Refactor UI elements and improve functionality: rename "My Collection" to "The Vault", add enemy checkbox to combatant forms, enhance button styles, and ensure proper handling of sold-out items in the marketplace.
 ---
 ## Things that broke (running list)
 

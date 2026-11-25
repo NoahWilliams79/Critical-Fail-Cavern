@@ -12,7 +12,7 @@
     <a class="brand" href="#dashboard" id="brand-name">Critical Fail Cavern</a>
     <nav aria-label="Main navigation">
       <a href="#dashboard" data-nav>Dashboard</a>
-      <a href="#database" data-nav>My Collection</a>
+      <a href="#database" data-nav>The Vault</a>
       <a href="#initiative" data-nav>Initiative</a>
       <a href="#battle-map" data-nav>Battle map</a>
       <a href="#marketplace" data-nav>Marketplace</a>
@@ -50,7 +50,7 @@
     </section>
 
     <section id="database" data-view hidden>
-      <h1>My Collection</h1>
+      <h1>The Vault</h1>
       <p class="muted">Manage the miniatures you own and use them in your encounters.</p>
       <h2 id="my-collection">Your miniatures</h2>
       <p class="muted" id="collection-capacity"></p>
@@ -133,6 +133,7 @@
           <div class="form-grid">
             <label>Name<input name="name" maxlength="80" placeholder="Player name"></label>
             <label>Miniature<select name="miniature"></select></label>
+            <label class="checkbox-field"><input name="enemy" type="checkbox"> Enemy</label>
             <label>Initiative<select name="initiativeMode"><option value="roll">Roll d20</option><option value="manual">Enter manually</option></select></label>
             <label data-manual-initiative hidden>Initiative score<input name="initiative" type="number" min="-10" max="50" value="10"></label>
             <label>Current HP<input name="hp" type="number" min="1" max="9999" value="10" required></label>
@@ -151,6 +152,7 @@
           <div class="form-grid">
             <label>Name<input name="name" maxlength="80" placeholder="Defaults to selected miniature"></label>
             <label>Miniature<select name="miniature"></select></label>
+            <label class="checkbox-field"><input name="enemy" type="checkbox"> Enemy</label>
             <label>Initiative<select name="initiativeMode"><option value="roll">Roll d20</option><option value="manual">Enter manually</option></select></label>
             <label data-manual-initiative hidden>Initiative score<input name="initiative" type="number" min="-10" max="50" value="10"></label>
             <label>Current HP<input name="hp" type="number" min="1" max="9999" value="10" required></label>
