@@ -1,7 +1,9 @@
 # Project log
 
 **Team name:** Just Noah Williams
+
 **Startup name:** Critical Fail Cavern
+
 **Live site link:** https://noahwilliams79.github.io/Critical-Fail-Cavern/
 
 ---
