@@ -183,10 +183,10 @@ Copy this block for each session.
 
 | Date | What went wrong | What we tried | What finally fixed it |
 |---|---|---|---|
-|Novemeber 17th| Automatic Inititive roll rolled over 20 | Created new prompt | specified to AI that inititive range can not exceed 20|
-|Novemeber 17th | previous Changes did not get commited  | reopening from git hub page/ checking forks  | Creating a new one from scratch|
-|November 25th |player markers color assigned to wrong type | Created new prompt | changing the character tag |
-|Novemeber 25th| app wont deploy to live link| tried re-running deployment, reopening codespace| restarted my laptop after it died and it deployed|
+|Novemeber 17th| Automatic Inititive roll rolled over 20 | Created new prompt | Specified to AI that inititive range can not exceed 20|
+|Novemeber 17th | Previous Changes did not get commited  | Reopening from git hub page/ checking forks  | Creating a new one from scratch|
+|November 25th |Player markers color assigned to wrong type | Created new prompt | Changing the character tag |
+|Novemeber 25th| App wont deploy to live link| Tried re-running deployment, reopening codespace| Restarted my laptop after it died and it deployed|
 
 
 ## What a real version would need
@@ -195,12 +195,12 @@ Everything we wanted but faked or left out — real logins, a real database, pay
 
 | Feature we faked or skipped | Why a real company would need it | How hard / expensive? |
 |---|---|---|
-| User Authentication/login | account logins top be secure and protected| medium- entra ID/ authentication through microsoft or alternative, can be pricey as scale grows (PaaS) |
-| shared cloud database| store user accounts, collections, marketplace listings| medium - cloud database(SQL Database)/ AZURE or AWS, can be pricey as scale grows (PaaS) |
-| payment processing| securely process payments using cards| medium - Use a known payment provider for ex. stripe |
-| backups| backup files against outages| low , auto backup configuration and tests would be conducted low cost|
-| Refund and reporting system | combat aginst scams, copyright| medium - refund system involves payment and reporting system will require developers/moderators to ensure all issues  can be resolved, can be combined with customer support agents |
-| customer support| IT to handle technical or customer issues | medium - Requires up front capital to develop support team and hire employees to assist|
+| User Authentication/login | Account logins top be secure and protected| Medium- entra ID/ authentication through microsoft or alternative, can be pricey as scale grows (PaaS) |
+| Shared cloud database| Store user accounts, collections, marketplace listings| Medium - Cloud database(SQL Database) or blob storage for unstructured data(images, etc..). AZURE or AWS, can be pricey as scale grows (PaaS) |
+| Payment processing| Securely process payments using cards| Medium - Use a known payment provider for ex. stripe |
+| Backups| Backup files against outages| Low - Auto backup configuration and tests would be conducted low cost|
+| Marketplace Moderators, Refund and reporting system | Combat aginst scams, copyright| Medium - Refund system involves payment and reporting system will require developers/moderators to ensure all issues  can be resolved, can be combined with customer support agents |
+| Customer support| IT to handle technical or customer issues | Medium - Requires up front capital to develop support team and hire employees to assist|
 
 
 
