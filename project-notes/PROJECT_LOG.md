@@ -174,8 +174,8 @@ Copy this block for each session.
   3. lock total price and complete purchase section of cart to bottom of cart screen, should stay stationary when scrolling trough items in cart
   4. move the in battle map inititive tracker off the map surface and on to the top of the legend, on mobile make the inititive tracker anchored off map at bottom but give 3 dots that alow you to open a menu to bring up legend
 
-- **What worked:** 
-- **What broke, and how we fixed it:** app wont deploy to live link, tried rerunning, app crashed, deploy issues, closed all app instances and vs code and re opened from github and applied changes
+- **What worked:** inititive tracker popup not on battle map on mobile,cart standardized layout, pop ups and button responsivity now shows for mobile
+- **What broke, and how we fixed it:** app wont deploy to live link, tried rerunning, app crashed, deploy issues, closed all app instances and codespace and re opened from github, didnt work, my computer died turned it back on and it deployed.
 - **Committed?** yes / no — commit message: yes - Enhance UI and functionality for cart and fullscreen features: update cart button states, improve fullscreen legend toggle, and refine notification styles for better user experience.
 
 ---
@@ -186,7 +186,7 @@ Copy this block for each session.
 |Novemeber 17th| Automatic Inititive roll rolled over 20 | Created new prompt | specified to AI that inititive range can not exceed 20|
 |Novemeber 17th | previous Changes did not get commited  | reopening from git hub page/ checking forks  | Creating a new one from scratch|
 |November 25th |player markers color assigned to wrong type | Created new prompt | changing the character tag |
-|Novemeber 25th| app wont deploy to live link| tried re-running deployment| Closed everything, restarted my computer and it worked|
+|Novemeber 25th| app wont deploy to live link| tried re-running deployment, reopening codespace| restarted my laptop after it died and it deployed|
 
 
 ## What a real version would need
@@ -195,16 +195,15 @@ Everything we wanted but faked or left out — real logins, a real database, pay
 
 | Feature we faked or skipped | Why a real company would need it | How hard / expensive? |
 |---|---|---|
-| User Authentication/login | account logins top be secure and protected| medium- entra ID/ authentication through microsoft or alternative, can be pricey as scale grows |
-| shared cloud database| store user accounts, collections, marketplace listings| medium - cloud database(SQL Database)/ AZURE or AWS, can be pricey as scale grows |
+| User Authentication/login | account logins top be secure and protected| medium- entra ID/ authentication through microsoft or alternative, can be pricey as scale grows (PaaS) |
+| shared cloud database| store user accounts, collections, marketplace listings| medium - cloud database(SQL Database)/ AZURE or AWS, can be pricey as scale grows (PaaS) |
 | payment processing| securely process payments using cards| medium - Use a known payment provider for ex. stripe |
 | backups| backup files against outages| low , auto backup configuration and tests would be conducted low cost|
-| Refund and reporting system | combat aginst scams, copyright| high, refund system involves payment and reporting system will require developers/moderators to ensure all issues  can be resolved |
-| customer support| IT to handle technical or customer issues | High - Requires up front capital to develop support team and hire employees to assist|
-||||
-||||
+| Refund and reporting system | combat aginst scams, copyright| medium - refund system involves payment and reporting system will require developers/moderators to ensure all issues  can be resolved, can be combined with customer support agents |
+| customer support| IT to handle technical or customer issues | medium - Requires up front capital to develop support team and hire employees to assist|
+
 
 
 ## Reflection (fill in at the end)
 
-The creation of the app using AI demonstrated both how useful of a tool can be, and how dumb it can be. The use of AI made the creation of the app almost instantaneous, but it required being more specific to successfully generate the features needed.With the exception of the deployment issue, the easy part of this project was creating the app. For the most part, the app came together pretty quickly. The hardest part of this project was coming up with an idea, I struggled pretty hard on a topic idea which resulted in quickly running out of time and led to the one chosen. Technically, the hardest part was diagnosing issues with the app, since the app was fully vibe coded I couldn't just look through code because I dont quite know what's been written. When I had the github deployment issue I spent an hour trying to troubleshoot and was forced to talk with the copilot agent to discuss issues with the app, but because I was unable to skim through the code because I wasn't sure what it did, this resulted in blind faith towards hoping the agent can fix my issue.. In the end, closing everything and restarting my computer made the deployment go through. A competitor would likely release a better version of this app, by using an actual development team, but if they were to just copy using ai then it probably would be copied in 2 hours, however,  if this was a fully established app, they would need to compete against the network effects of the marketplace, and any brand reputation. Physically it would be replaced very quickly, socially it would depend on numerous factors.
+The creation of the app using AI demonstrated both how useful of a tool it can be, and how dumb it can be. The use of AI made the creation of the app almost instantaneous and easy, but it required being more specific to successfully generate the features needed. With the exception of the deployment issue, the easiest part of this project was creating the physical app. For the most part, the app came together pretty quickly. The hardest part of this project was coming up with an idea. I struggled for a pretty long time trying to come up with any idea, and it resulted in quickly running out of time. In creation of the app, the hardest part was diagnosing issues with the app, since the app was fully vibe coded, I could not just look through code to debug because I dont quite know what's been written. When I had the github deployment issue I spent an hour trying to troubleshoot issues, at first I was unsure of whether the issue came from the recent commit or if it was an external problem, and was forced to discuss the isues with the copilot agent, putting my blind faith into its computer hand. I ended up learning it was an issue with github deployment, and not the newest changes to the app, I tried re deploying in GitHub, closing both open codespace and repo but there was no fix, until my computer died and then when I opened the app again it deployed properly fixing my issue. In reality, a competitor would likely release a better version of this app, by utilizing an actual development team, but if they were to just copy using ai then it probably could be copied in 2 hours. However, if this was a fully established app, they would need to compete against the network effects of the marketplace, and brand loyalty/reputation. The recreation of the app physically would be replaced very quickly, socially it would depend on numerous factors.
